@@ -1,4 +1,4 @@
-"""Transparent cysteine engineering ranking heuristic."""
+"""Transparent cysteine engineering and rigidification ranking heuristics."""
 
 from __future__ import annotations
 
@@ -40,12 +40,37 @@ def accessibility_component_from_sasa(values: pd.Series) -> pd.Series:
 
 
 def rigidity_component_from_flexibility(values: pd.Series) -> pd.Series:
-    """Map a target-protein flexibility proxy to [0, 1], with lower flexibility favored."""
+    """Legacy transform: lower flexibility proxy receives higher rigidity score."""
     numeric = pd.to_numeric(values, errors="coerce")
     if numeric.notna().sum() < 2:
         return pd.Series(0.5, index=values.index)
     filled = numeric.fillna(numeric.median())
     return minmax_low_good(filled)
+
+
+def flexibility_component_from_proxy(values: pd.Series) -> pd.Series:
+    """Map a local flexibility proxy to [0, 1], with higher flexibility favored."""
+    numeric = pd.to_numeric(values, errors="coerce")
+    if numeric.notna().sum() < 2:
+        return pd.Series(0.5, index=values.index)
+    filled = numeric.fillna(numeric.median())
+    return minmax_high_good(filled)
+
+
+def lysine_environment_component_from_count(
+    counts: pd.Series, saturation_k: float = 3.0
+) -> pd.Series:
+    """Saturating transform for exposed nearby Lys counts."""
+    if saturation_k <= 0:
+        raise ValueError("saturation_k must be positive")
+    numeric = pd.to_numeric(counts, errors="coerce").fillna(0.0).clip(lower=0.0)
+    return pd.Series(1.0 - np.exp(-numeric / saturation_k), index=counts.index)
+
+
+def _series_or_default(df: pd.DataFrame, column: str, default: float = 0.0) -> pd.Series:
+    if column not in df:
+        return pd.Series(default, index=df.index)
+    return pd.to_numeric(df[column], errors="coerce").fillna(default)
 
 
 def rank_predictions(
@@ -55,19 +80,18 @@ def rank_predictions(
 ) -> pd.DataFrame:
     config = load_config(config_path)
     ranking_config = config.get("ranking", {})
-    weights = ranking_config.get("weights", {})
-    stability_weight = float(weights.get("stability", 0.50))
-    accessibility_weight = float(weights.get("accessibility", weights.get("exposure", 0.30)))
-    rigidity_weight = float(weights.get("rigidity", 0.20))
-    protected_penalty_weight = float(weights.get("protected_penalty", 0.10))
-    existing_cys_penalty_weight = float(weights.get("existing_cys_penalty", 0.05))
+    cys_site_weights = ranking_config.get("cys_site_weights", {})
+    rigidification_weights = ranking_config.get("rigidification_weights", {})
+    final_weights = ranking_config.get("final_weights", {})
+    lys_config = config.get("lysine_environment", {})
+    existing_cys_config = config.get("existing_cys", {})
+    protected_radius = float(ranking_config.get("protected_site_radius_angstrom", 8.0))
     existing_cys_warning_radius = float(
-        ranking_config.get("existing_cys_warning_radius_angstrom", 6.0)
+        existing_cys_config.get("warning_radius_angstrom", 10.0)
     )
     existing_cys_penalty_radius = float(
-        ranking_config.get("existing_cys_penalty_radius_angstrom", existing_cys_warning_radius)
+        existing_cys_config.get("strong_penalty_radius_angstrom", 6.0)
     )
-    protected_radius = float(ranking_config.get("protected_site_radius_angstrom", 8.0))
 
     df = pd.read_csv(predictions_csv)
     if "stability_component" not in df:
@@ -76,15 +100,30 @@ def rank_predictions(
             favorable_ddg=float(ranking_config.get("stability_reference_ddg_low", -1.0)),
             unfavorable_ddg=float(ranking_config.get("stability_reference_ddg_high", 2.0)),
         )
+
     df["accessibility_component"] = accessibility_component_from_sasa(df["relative_sasa"])
-    if "flexibility_value" not in df:
-        if "normalized_b_factor" in df:
-            df["flexibility_value"] = pd.to_numeric(df["normalized_b_factor"], errors="coerce")
-            df["flexibility_method"] = "BFACTOR"
+
+    if "local_flexibility_proxy" not in df:
+        if "flexibility_value" in df:
+            df["local_flexibility_proxy"] = pd.to_numeric(df["flexibility_value"], errors="coerce")
+        elif "normalized_b_factor" in df:
+            df["local_flexibility_proxy"] = pd.to_numeric(
+                df["normalized_b_factor"], errors="coerce"
+            )
         else:
-            df["flexibility_value"] = np.nan
-            df["flexibility_method"] = "UNAVAILABLE"
-    df["rigidity_component"] = rigidity_component_from_flexibility(df["flexibility_value"])
+            df["local_flexibility_proxy"] = np.nan
+    if "flexibility_method" not in df:
+        df["flexibility_method"] = "BFACTOR" if "normalized_b_factor" in df else "UNAVAILABLE"
+    df["flexibility_value"] = df["local_flexibility_proxy"]
+    df["flexibility_component"] = flexibility_component_from_proxy(df["local_flexibility_proxy"])
+    df["rigidity_component"] = rigidity_component_from_flexibility(df["local_flexibility_proxy"])
+
+    if "local_exposed_lys_count" not in df:
+        df["local_exposed_lys_count"] = 0
+    df["lysine_environment_component"] = lysine_environment_component_from_count(
+        df["local_exposed_lys_count"],
+        saturation_k=float(lys_config.get("saturation_k", 3.0)),
+    )
 
     if "distance_to_nearest_protected" in df:
         protected_distance = pd.to_numeric(df["distance_to_nearest_protected"], errors="coerce")
@@ -96,12 +135,12 @@ def rank_predictions(
     else:
         df["protected_site_penalty"] = 0.0
 
-    if "distance_to_existing_cys" in df:
-        cys_distance = pd.to_numeric(df["distance_to_existing_cys"], errors="coerce")
-        df["existing_cys_proximity_warning"] = (
-            cys_distance <= existing_cys_warning_radius
-        )
-        df["existing_cys_penalty"] = np.clip(
+    if "nearest_existing_cys_distance" not in df and "distance_to_existing_cys" in df:
+        df["nearest_existing_cys_distance"] = df["distance_to_existing_cys"]
+    if "nearest_existing_cys_distance" in df:
+        cys_distance = pd.to_numeric(df["nearest_existing_cys_distance"], errors="coerce")
+        df["existing_cys_proximity_warning"] = cys_distance <= existing_cys_warning_radius
+        distance_penalty = np.clip(
             (existing_cys_penalty_radius - cys_distance.fillna(existing_cys_penalty_radius))
             / existing_cys_penalty_radius,
             0.0,
@@ -109,25 +148,48 @@ def rank_predictions(
         )
     else:
         df["existing_cys_proximity_warning"] = False
-        df["existing_cys_penalty"] = 0.0
+        distance_penalty = pd.Series(0.0, index=df.index)
 
+    count_col = "existing_cys_count_10A" if "existing_cys_count_10A" in df else None
+    count_penalty = (
+        pd.Series(0.0, index=df.index)
+        if count_col is None
+        else np.clip(_series_or_default(df, count_col) / 3.0, 0.0, 1.0)
+    )
+    df["existing_cys_penalty"] = np.clip(0.7 * distance_penalty + 0.3 * count_penalty, 0.0, 1.0)
+
+    df["cys_site_suitability"] = (
+        float(cys_site_weights.get("stability", 0.60)) * df["stability_component"]
+        + float(cys_site_weights.get("accessibility", 0.35)) * df["accessibility_component"]
+        - float(cys_site_weights.get("existing_cys_penalty", 0.10))
+        * df["existing_cys_penalty"]
+        - float(cys_site_weights.get("protected_penalty", 0.15))
+        * df["protected_site_penalty"]
+    )
+    df["rigidification_potential"] = (
+        float(rigidification_weights.get("flexibility", 0.35)) * df["flexibility_component"]
+        + float(rigidification_weights.get("lysine_environment", 0.40))
+        * df["lysine_environment_component"]
+        + float(rigidification_weights.get("accessibility", 0.25))
+        * df["accessibility_component"]
+        - float(rigidification_weights.get("existing_cys_penalty", 0.05))
+        * df["existing_cys_penalty"]
+        - float(rigidification_weights.get("protected_penalty", 0.10))
+        * df["protected_site_penalty"]
+    )
+    df["final_engineering_score"] = (
+        float(final_weights.get("cys_site", 0.60)) * df["cys_site_suitability"]
+        + float(final_weights.get("rigidification", 0.40)) * df["rigidification_potential"]
+    )
+    df["cys_suitability_score"] = df["final_engineering_score"]
     df["ranking_formula"] = (
-        "stability_weight*stability_component + "
-        "accessibility_weight*accessibility_component + "
-        "rigidity_weight*rigidity_component - "
-        "protected_penalty_weight*protected_site_penalty - "
-        "existing_cys_penalty_weight*existing_cys_penalty"
+        "final_engineering_score = final_site_weight*cys_site_suitability + "
+        "final_rigidification_weight*rigidification_potential"
     )
-    df["cys_suitability_score"] = (
-        stability_weight * df["stability_component"]
-        + accessibility_weight * df["accessibility_component"]
-        + rigidity_weight * df["rigidity_component"]
-        - protected_penalty_weight * df["protected_site_penalty"]
-        - existing_cys_penalty_weight * df["existing_cys_penalty"]
-    )
+
     df = df.sort_values(
-        ["cys_suitability_score", "predicted_destabilization_ddg"],
-        ascending=[False, True],
+        ["final_engineering_score", "cys_site_suitability", "predicted_destabilization_ddg"],
+        ascending=[False, False, True],
     ).reset_index(drop=True)
     df.insert(0, "rank_engineering", range(1, len(df) + 1))
     Path(output_csv).parent.mkdir(parents=True, exist_ok=True)

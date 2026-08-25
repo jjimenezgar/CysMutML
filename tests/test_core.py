@@ -18,6 +18,8 @@ from cysmutml.models.train import train_final_model
 from cysmutml.mutations import parse_mutation
 from cysmutml.ranking.engineering import (
     accessibility_component_from_sasa,
+    flexibility_component_from_proxy,
+    lysine_environment_component_from_count,
     rank_predictions,
     rigidity_component_from_flexibility,
     stability_component_from_ddg,
@@ -140,9 +142,14 @@ def test_inference_generation_and_ranking(tmp_path):
     )
     assert ranked.iloc[0]["rank_engineering"] == 1
     assert "cys_suitability_score" in ranked
+    assert "cys_site_suitability" in ranked
+    assert "rigidification_potential" in ranked
+    assert "final_engineering_score" in ranked
     assert "stability_component" in predictions
     assert "accessibility_component" in ranked
-    assert "rigidity_component" in ranked
+    assert "flexibility_component" in ranked
+    assert "local_exposed_lys_count" in predictions
+    assert "nearest_existing_cys_distance" in predictions
 
 
 def test_duplicate_aggregation_uses_median(tmp_path):
@@ -198,9 +205,13 @@ def test_hybrid_score_components_are_normalized():
     stability = stability_component_from_ddg(pd.Series([-1.0, 0.5, 2.0]))
     accessibility = accessibility_component_from_sasa(pd.Series([0.0, 0.5, 1.5]))
     rigidity = rigidity_component_from_flexibility(pd.Series([2.0, 1.0, 0.0]))
+    flexibility = flexibility_component_from_proxy(pd.Series([2.0, 1.0, 0.0]))
+    lys = lysine_environment_component_from_count(pd.Series([0, 3]))
     assert list(stability.round(3)) == [1.0, 0.5, 0.0]
     assert list(accessibility.round(3)) == [0.0, 0.5, 1.0]
     assert list(rigidity.round(3)) == [0.0, 0.5, 1.0]
+    assert list(flexibility.round(3)) == [1.0, 0.5, 0.0]
+    assert list(lys.round(3)) == [0.0, 0.632]
 
 
 def test_rigidity_missing_values_use_neutral_fallback():
@@ -226,8 +237,10 @@ def test_ranking_score_reconstruction_and_penalties(tmp_path):
             "mutation": ["K1C", "L2C"],
             "predicted_destabilization_ddg": [0.0, 0.0],
             "relative_sasa": [1.0, 0.0],
-            "flexibility_value": [0.0, 1.0],
+            "local_flexibility_proxy": [0.0, 1.0],
             "flexibility_method": ["BFACTOR", "BFACTOR"],
+            "local_exposed_lys_count": [3, 0],
+            "existing_cys_count_10A": [1, 0],
             "distance_to_nearest_protected": [1.0, 20.0],
             "distance_to_existing_cys": [1.0, 20.0],
         }
@@ -237,13 +250,31 @@ def test_ranking_score_reconstruction_and_penalties(tmp_path):
     predictions.to_csv(csv, index=False)
     ranked = rank_predictions(csv, out)
     first = ranked.iloc[0]
-    reconstructed = (
-        0.50 * first["stability_component"]
-        + 0.30 * first["accessibility_component"]
-        + 0.20 * first["rigidity_component"]
-        - 0.10 * first["protected_site_penalty"]
-        - 0.05 * first["existing_cys_penalty"]
+    site = (
+        0.60 * first["stability_component"]
+        + 0.35 * first["accessibility_component"]
+        - 0.10 * first["existing_cys_penalty"]
+        - 0.15 * first["protected_site_penalty"]
     )
-    assert abs(first["cys_suitability_score"] - reconstructed) < 1e-9
+    rigidification = (
+        0.35 * first["flexibility_component"]
+        + 0.40 * first["lysine_environment_component"]
+        + 0.25 * first["accessibility_component"]
+        - 0.05 * first["existing_cys_penalty"]
+        - 0.10 * first["protected_site_penalty"]
+    )
+    final = 0.60 * site + 0.40 * rigidification
+    assert abs(first["cys_site_suitability"] - site) < 1e-9
+    assert abs(first["rigidification_potential"] - rigidification) < 1e-9
+    assert abs(first["final_engineering_score"] - final) < 1e-9
     assert ranked["existing_cys_proximity_warning"].any()
     assert out.exists()
+
+
+def test_local_lys_and_cys_environment_columns():
+    generated = generate_cys_feature_rows(PDB, "A")
+    assert "local_lys_count" in generated
+    assert "local_exposed_lys_count" in generated
+    assert "existing_cys_count_8A" in generated
+    assert "existing_cys_count_10A" in generated
+    assert (generated["lysine_radius_angstrom"] == 20.0).all()

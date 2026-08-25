@@ -111,6 +111,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--output", default="results/prediction")
     p.add_argument("--protected-residues", default=None)
     p.add_argument("--config", default="configs/default.yaml")
+    p.add_argument("--monocysteine-design", action="store_true")
 
     p = sub.add_parser("rank")
     p.add_argument("--predictions", required=True)
@@ -222,6 +223,7 @@ def main(argv: list[str] | None = None) -> int:
             args.output,
             protected_residues=args.protected_residues,
             config_path=args.config,
+            monocysteine_design=args.monocysteine_design,
         )
         ranking_path = Path(args.output) / "residue_ranking.csv"
         rank_predictions(

@@ -8,12 +8,13 @@ import joblib
 import numpy as np
 import pandas as pd
 
-from cysmutml.amino_acids import physicochemical_features
+from cysmutml.amino_acids import MAX_ASA_TIEN_2013, physicochemical_features
 from cysmutml.config import load_config
 from cysmutml.ranking.engineering import stability_component_from_ddg
 from cysmutml.structures.features import (
     ca_coord,
     chain_residues,
+    compute_sasa_by_residue,
     residue_key,
     residue_one_letter,
     residue_structural_features,
@@ -44,11 +45,35 @@ def _parse_protected_residues(protected_residues: str | None) -> set[tuple[str, 
     return parsed
 
 
+def _relative_sasa_for_residue(
+    sasa_by_residue: dict[tuple[str, str], float], chain_id: str, residue
+) -> float:
+    aa = residue_one_letter(residue)
+    sasa = sasa_by_residue.get((chain_id, residue_key(residue)), np.nan)
+    if np.isnan(sasa):
+        return np.nan
+    return min(float(sasa) / MAX_ASA_TIEN_2013[aa], 1.5)
+
+
 def generate_cys_feature_rows(
     pdb_path: str | Path,
     chain_id: str,
     protected_residues: str | None = None,
+    config_path: str | Path = "configs/default.yaml",
+    monocysteine_design: bool = False,
 ) -> pd.DataFrame:
+    config = load_config(config_path)
+    lys_config = config.get("lysine_environment", {})
+    existing_cys_config = config.get("existing_cys", {})
+    monocys_config = config.get("monocysteine_design", {})
+    lys_radius = float(lys_config.get("radius_angstrom", 20.0))
+    lys_exposure_threshold = float(lys_config.get("exposure_relative_sasa_threshold", 0.25))
+    cys_count_radii = [
+        float(radius) for radius in existing_cys_config.get("count_radii_angstrom", [6, 8, 10, 15])
+    ]
+    exposed_native_cys_threshold = float(
+        monocys_config.get("exposed_cys_relative_sasa_threshold", 0.25)
+    )
     pdb_path = Path(pdb_path)
     if not pdb_path.exists():
         raise FileNotFoundError(f"PDB file not found: {pdb_path}")
@@ -61,10 +86,22 @@ def generate_cys_feature_rows(
         for other_chain in model
         for residue in chain_residues(other_chain)
     ]
-    existing_cys_coords = [
-        ca_coord(residue) for _, residue in all_residues if residue_one_letter(residue) == "C"
+    sasa_by_residue = compute_sasa_by_residue(pdb_path)
+    existing_cys_entries = [
+        (other_chain_id, residue, ca_coord(residue))
+        for other_chain_id, residue in all_residues
+        if residue_one_letter(residue) == "C"
     ]
-    existing_cys_coords = [coord for coord in existing_cys_coords if coord is not None]
+    existing_cys_entries = [
+        (other_chain_id, residue, coord)
+        for other_chain_id, residue, coord in existing_cys_entries
+        if coord is not None
+    ]
+    exposed_native_cys_count = sum(
+        _relative_sasa_for_residue(sasa_by_residue, other_chain_id, residue)
+        >= exposed_native_cys_threshold
+        for other_chain_id, residue, _ in existing_cys_entries
+    )
     protected = _parse_protected_residues(protected_residues)
     protected_coords = [
         ca_coord(residue)
@@ -80,10 +117,28 @@ def generate_cys_feature_rows(
         physchem = physicochemical_features(wt, "C")
         number = residue_key(residue)
         target_ca = ca_coord(residue)
-        if target_ca is not None and existing_cys_coords:
-            distance_to_existing_cys = min(
-                float(np.linalg.norm(target_ca - coord)) for coord in existing_cys_coords
-            )
+        lys_distances = []
+        exposed_lys_distances = []
+        cys_distances = []
+        if target_ca is not None:
+            for other_chain_id, other_residue in all_residues:
+                if other_chain_id == chain_id and other_residue.id == residue.id:
+                    continue
+                other_ca = ca_coord(other_residue)
+                if other_ca is None:
+                    continue
+                distance = float(np.linalg.norm(target_ca - other_ca))
+                if residue_one_letter(other_residue) == "K" and distance <= lys_radius:
+                    lys_distances.append(distance)
+                    lys_rel_sasa = _relative_sasa_for_residue(
+                        sasa_by_residue, other_chain_id, other_residue
+                    )
+                    if lys_rel_sasa >= lys_exposure_threshold:
+                        exposed_lys_distances.append(distance)
+            for _, _cys_residue, cys_coord in existing_cys_entries:
+                cys_distances.append(float(np.linalg.norm(target_ca - cys_coord)))
+        if cys_distances:
+            distance_to_existing_cys = min(cys_distances)
         else:
             distance_to_existing_cys = np.nan
         if target_ca is not None and protected_coords:
@@ -100,9 +155,27 @@ def generate_cys_feature_rows(
                 "wt_aa": wt,
                 "mutation": f"{wt}{number}C",
                 "distance_to_existing_cys": distance_to_existing_cys,
+                "nearest_existing_cys_distance": distance_to_existing_cys,
+                "local_lys_count": len(lys_distances),
+                "local_exposed_lys_count": len(exposed_lys_distances),
+                "lysine_radius_angstrom": lys_radius,
+                "lys_exposure_relative_sasa_threshold": lys_exposure_threshold,
+                "native_cys_count_total": len(existing_cys_entries),
+                "native_exposed_cys_count": exposed_native_cys_count,
+                "native_cys_context": "monocysteine_caution"
+                if monocysteine_design and exposed_native_cys_count
+                else "native_cys_present"
+                if existing_cys_entries
+                else "no_native_cys_detected",
                 "distance_to_nearest_protected": distance_to_nearest_protected,
                 **physchem,
                 **structural,
+                **{
+                    f"existing_cys_count_{int(radius)}A": int(
+                        sum(distance <= radius for distance in cys_distances)
+                    )
+                    for radius in cys_count_radii
+                },
             }
         )
     out = pd.DataFrame(rows)
@@ -140,13 +213,20 @@ def predict_cys_mutations(
     output_dir: str | Path,
     protected_residues: str | None = None,
     config_path: str | Path = "configs/default.yaml",
+    monocysteine_design: bool = False,
 ) -> tuple[pd.DataFrame, list[str]]:
     config = load_config(config_path)
     model_path = Path(model_path)
     if not model_path.exists():
         raise FileNotFoundError(f"Model file not found: {model_path}")
     artifact = joblib.load(model_path)
-    features = generate_cys_feature_rows(pdb_path, chain_id, protected_residues)
+    features = generate_cys_feature_rows(
+        pdb_path,
+        chain_id,
+        protected_residues,
+        config_path=config_path,
+        monocysteine_design=monocysteine_design,
+    )
     model_features = artifact["numeric_features"] + artifact["categorical_features"]
     for col in artifact["numeric_features"]:
         if col not in features:
@@ -166,9 +246,11 @@ def predict_cys_mutations(
         unfavorable_ddg=float(ranking_config.get("stability_reference_ddg_high", 2.0)),
     )
     if "normalized_b_factor" in out:
-        out["flexibility_value"] = pd.to_numeric(out["normalized_b_factor"], errors="coerce")
+        out["local_flexibility_proxy"] = pd.to_numeric(out["normalized_b_factor"], errors="coerce")
+        out["flexibility_value"] = out["local_flexibility_proxy"]
         out["flexibility_method"] = "BFACTOR"
     else:
+        out["local_flexibility_proxy"] = np.nan
         out["flexibility_value"] = np.nan
         out["flexibility_method"] = "UNAVAILABLE"
     out = out.sort_values("predicted_destabilization_ddg", ascending=True).reset_index(drop=True)
