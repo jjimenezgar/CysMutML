@@ -17,7 +17,6 @@ from cysmutml.structures.features import (
     compute_sasa_by_residue,
     residue_key,
     residue_one_letter,
-    residue_structural_features,
 )
 from cysmutml.structures.io import get_chain, parse_pdb
 
@@ -55,6 +54,56 @@ def _relative_sasa_for_residue(
     return min(float(sasa) / MAX_ASA_TIEN_2013[aa], 1.5)
 
 
+def _chain_structural_feature_map(
+    residues,
+    chain_id: str,
+    sasa_by_residue: dict[tuple[str, str], float],
+) -> dict[str, dict[str, float | int | str]]:
+    ca_coords = {residue_key(res): ca_coord(res) for res in residues if ca_coord(res) is not None}
+    all_ca = np.asarray(list(ca_coords.values()), dtype=float)
+    center = all_ca.mean(axis=0)
+    max_center_distance = max(float(np.linalg.norm(point - center)) for point in all_ca) or 1.0
+    chain_b = [float(atom.bfactor) for res in residues for atom in res.get_atoms()]
+    chain_b_mean = float(np.mean(chain_b)) if chain_b else np.nan
+    chain_b_std = float(np.std(chain_b)) if chain_b else np.nan
+    out = {}
+    for residue in residues:
+        key = residue_key(residue)
+        aa = residue_one_letter(residue)
+        target_ca = ca_coords.get(key)
+        if target_ca is None:
+            continue
+        other_ca = np.asarray(
+            [coord for other_key, coord in ca_coords.items() if other_key != key], dtype=float
+        )
+        distances = (
+            np.linalg.norm(other_ca - target_ca, axis=1) if len(other_ca) else np.array([])
+        )
+        b_factors = [float(atom.bfactor) for atom in residue.get_atoms()]
+        residue_b = float(np.mean(b_factors)) if b_factors else np.nan
+        sasa = float(sasa_by_residue.get((chain_id, key), np.nan))
+        out[key] = {
+            "abs_sasa": sasa,
+            "relative_sasa": min(sasa / MAX_ASA_TIEN_2013[aa], 1.5)
+            if not np.isnan(sasa)
+            else np.nan,
+            "normalized_ca_distance_to_center": float(
+                np.linalg.norm(target_ca - center) / max_center_distance
+            ),
+            "local_density_10a": int(np.sum(distances <= 10.0)) if len(distances) else 0,
+            "heavy_atom_contact_count": np.nan,
+            "mean_b_factor": residue_b,
+            "normalized_b_factor": (residue_b - chain_b_mean) / chain_b_std
+            if chain_b_std > 0
+            else 0.0,
+            "secondary_structure": "unknown",
+            "ca_neighbors_6a": int(np.sum(distances <= 6.0)) if len(distances) else 0,
+            "ca_neighbors_8a": int(np.sum(distances <= 8.0)) if len(distances) else 0,
+            "ca_neighbors_10a": int(np.sum(distances <= 10.0)) if len(distances) else 0,
+        }
+    return out
+
+
 def generate_cys_feature_rows(
     pdb_path: str | Path,
     chain_id: str,
@@ -87,6 +136,7 @@ def generate_cys_feature_rows(
         for residue in chain_residues(other_chain)
     ]
     sasa_by_residue = compute_sasa_by_residue(pdb_path)
+    structural_by_residue = _chain_structural_feature_map(residues, chain_id, sasa_by_residue)
     existing_cys_entries = [
         (other_chain_id, residue, ca_coord(residue))
         for other_chain_id, residue in all_residues
@@ -113,9 +163,9 @@ def generate_cys_feature_rows(
         wt = residue_one_letter(residue)
         if wt == "C":
             continue
-        structural = residue_structural_features(pdb_path, chain_id, residue)
         physchem = physicochemical_features(wt, "C")
         number = residue_key(residue)
+        structural = structural_by_residue[number]
         target_ca = ca_coord(residue)
         lys_distances = []
         exposed_lys_distances = []

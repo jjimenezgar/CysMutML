@@ -1,6 +1,6 @@
 # CysMutML
 
-**CysMutML v1.0 is a lightweight hybrid ML and structural-bioinformatics pipeline for prioritizing candidate cysteine substitutions in proteins.** It learns mutation-associated destabilization from FireProtDB using interpretable physicochemical features, then combines that prediction with target-PDB SASA, B-factor-derived rigidity, protected-site, and existing-cysteine heuristics to produce a transparent Cys candidate ranking.
+**CysMutML is a lightweight hybrid ML and structural-bioinformatics pipeline for prioritizing candidate cysteine substitutions in proteins.** It learns mutation-associated destabilization from FireProtDB using interpretable physicochemical features, then combines that prediction with target-PDB SASA, B-factor-derived flexibility, local exposed Lys context, protected-site, and existing-cysteine heuristics to produce a transparent Cys candidate ranking.
 
 ![CysMutML workflow](docs/figures/cysmutml_workflow.png)
 
@@ -32,7 +32,7 @@ The ML model and the structural heuristic are intentionally separate.
 - Aggregate repeated protein/mutation measurements by median DDG.
 - Train/evaluate physicochemical models with protein-grouped cross-validation.
 - Predict `predicted_destabilization_ddg` for every X->Cys mutation in a PDB chain.
-- Rank candidates using a transparent formula with configurable weights.
+- Rank candidates using transparent, configurable `cys_site_suitability`, `rigidification_potential`, and `final_engineering_score` formulas.
 - Export ML predictions, ranking CSVs, a score-encoded PDB, and a PyMOL script.
 
 ## Model
@@ -136,24 +136,49 @@ cysmutml build-features \
 
 - relative SASA;
 - accessibility component;
-- B-factor-derived rigidity component;
+- B-factor-derived flexibility component;
+- local exposed Lys component;
 - optional penalties;
-- final `cys_suitability_score`.
+- `cys_site_suitability`;
+- `rigidification_potential`;
+- final `final_engineering_score`.
 
 ## Ranking Formula
 
-Default v1.0 formula:
+Default formula:
 
 ```text
-score =
-  0.50 * stability_component
-+ 0.30 * accessibility_component
-+ 0.20 * rigidity_component
-- 0.10 * protected_site_penalty
+cys_site_suitability =
+  0.60 * stability_component
++ 0.35 * accessibility_component
+- 0.10 * existing_cys_penalty
+- 0.15 * protected_site_penalty
+
+rigidification_potential =
+  0.35 * flexibility_component
++ 0.40 * lysine_environment_component
++ 0.25 * accessibility_component
 - 0.05 * existing_cys_penalty
+- 0.10 * protected_site_penalty
+
+final_engineering_score =
+  0.60 * cys_site_suitability
++ 0.40 * rigidification_potential
 ```
 
 These are heuristic defaults, not experimentally optimized weights. Details are in `docs/RANKING_FORMULA.md`.
+
+## Retrospective Validation: Godoy et al. 2011
+
+CysMutML includes a small retrospective audit against the supplied Godoy et al. PGA/BTL2 cysteine-immobilization case study.
+
+Files:
+
+- `validation/godoy2011/VALIDATION_REPORT.md`
+- `validation/godoy2011/full_validation_matrix.csv`
+- `validation/godoy2011/validation_metrics_summary.csv`
+
+Key result: the upgraded heuristic is more interpretable and partially enriches experimental sites in the upper 20-30% of candidates, but it is not calibrated enough to claim prediction of immobilization success. Combined rigidification potential had moderate association with stabilization factors across the 13 mutants, while per-enzyme correlations were weak or inconsistent.
 
 ## Real Example
 
@@ -180,7 +205,8 @@ Learned from data:
 Calculated from structure:
 
 - SASA;
-- B-factor-derived rigidity proxy;
+- B-factor-derived flexibility proxy;
+- local exposed Lys context;
 - protected-site distance;
 - existing-cysteine proximity.
 
@@ -202,7 +228,7 @@ CysMutML does not predict immobilization yield, activity retention, disulfide fo
 Latest verified status:
 
 ```text
-pytest: 15 passed
+pytest: 16 passed
 ruff: all checks passed
 ```
 

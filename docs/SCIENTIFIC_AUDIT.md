@@ -98,19 +98,40 @@ The ML output is clearly labeled as predicted destabilization. It is not a feasi
 Structural descriptors are calculated only on the target PDB:
 
 - relative SASA by Biopython Shrake-Rupley;
-- B-factor-derived rigidity proxy;
+- B-factor-derived flexibility proxy;
+- local exposed Lys count;
 - optional protected-residue distance;
 - existing-cysteine proximity.
 
-The final `cys_suitability_score` is reconstructable from output columns:
+The final ranking is separated into `cys_site_suitability`, `rigidification_potential`, and `final_engineering_score`. All three are reconstructable from output columns.
+
+Cys-site suitability:
 
 ```text
-score =
-  0.50 * stability_component
-+ 0.30 * accessibility_component
-+ 0.20 * rigidity_component
-- 0.10 * protected_site_penalty
+cys_site_suitability =
+  0.60 * stability_component
++ 0.35 * accessibility_component
+- 0.10 * existing_cys_penalty
+- 0.15 * protected_site_penalty
+```
+
+Rigidification potential:
+
+```text
+rigidification_potential =
+  0.35 * flexibility_component
++ 0.40 * lysine_environment_component
++ 0.25 * accessibility_component
 - 0.05 * existing_cys_penalty
+- 0.10 * protected_site_penalty
+```
+
+Final engineering score:
+
+```text
+final_engineering_score =
+  0.60 * cys_site_suitability
++ 0.40 * rigidification_potential
 ```
 
 The weights are heuristic defaults and configurable in `configs/default.yaml`.
@@ -125,6 +146,27 @@ Existing cysteines:
 
 - proximity is reported as an engineering caution;
 - proximity does not imply disulfide formation.
+
+## Godoy 2011 Retrospective Validation
+
+Status:
+
+- Prevalidation heuristic freeze completed before inspecting outcome tables.
+- Frozen config hash verified after validation.
+- FireProtDB model was not retrained.
+- Godoy validation report created at `validation/godoy2011/VALIDATION_REPORT.md`.
+
+Audit findings:
+
+- ML stability did not meaningfully correlate with relative soluble activity across the 13 Godoy mutants.
+- Calculated accessibility had moderate overall association with reported accessibility, but BTL2 site-level mismatches were substantial.
+- Calculated local exposed Lys counts had moderate rank association with reported Lys counts, but exact counts differed.
+- Combined rigidification potential had moderate association with stabilization factors across both enzymes, but per-enzyme associations were weak or inconsistent.
+- The final engineering score partially enriched experimental sites in the top 20-30%, but not in the top 5-10 candidates.
+
+Conclusion:
+
+The validation supports CysMutML as a transparent retrospective prioritization aid, not as a calibrated predictor of immobilization success.
 
 ## Claims
 

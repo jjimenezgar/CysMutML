@@ -205,3 +205,70 @@ Command: `.venv/bin/pip wheel . --no-deps --wheel-dir /tmp/cysmutml_wheel`
 Purpose: Verify package wheel build from `pyproject.toml`.
 Result: Initial sandboxed run failed due blocked network while resolving build dependencies; approved network run succeeded and built `cysmutml-1.0.0-py3-none-any.whl`.
 Status: EXECUTED AND VERIFIED
+
+## 2026-08-25 Godoy 2011 Heuristic Validation Milestone
+
+Command: `.venv/bin/pytest -q`
+Purpose: Verify upgraded heuristic implementation before outcome-table extraction.
+Result: 16 passed.
+Status: EXECUTED AND VERIFIED
+
+Command: `.venv/bin/ruff check .`
+Purpose: Lint upgraded heuristic implementation before outcome-table extraction.
+Result: All checks passed.
+Status: EXECUTED AND VERIFIED
+
+Command: `git commit -m "Freeze Godoy prevalidation heuristic"`
+Purpose: Freeze scoring formulas and code before extracting Godoy outcome tables.
+Result: Commit `1715ae3` created.
+Status: EXECUTED AND VERIFIED
+
+Command: `git commit -m "Record Godoy prevalidation freeze"`
+Purpose: Record frozen config hash and prevalidation metadata.
+Result: Commit `3c8a972` created.
+Status: EXECUTED AND VERIFIED
+
+Command: `pdftotext -layout ...`
+Purpose: Extract text from supplied Godoy main paper and supporting-information PDFs.
+Result: Temporary local text extraction succeeded and was used to transcribe validation tables. The extracted article text was not retained in the repository.
+Status: EXECUTED AND VERIFIED
+
+Command: `curl -L ...`
+Purpose: Download PDB structures specified by the Godoy supporting information.
+Result: Downloaded `1k5q.pdb` and `2w22.pdb`.
+Status: EXECUTED AND VERIFIED
+
+Command: `.venv/bin/cysmutml predict --pdb validation/godoy2011/structures/1k5q.pdb --chain A --model models/cysmutml_model.joblib --output validation/godoy2011/predictions/PGA_alpha`
+Purpose: Generate PGA alpha-chain X->Cys predictions and rankings.
+Result: Completed.
+Status: EXECUTED AND VERIFIED
+
+Command: `.venv/bin/cysmutml predict --pdb validation/godoy2011/structures/1k5q.pdb --chain B --model models/cysmutml_model.joblib --output validation/godoy2011/predictions/PGA_beta`
+Purpose: Generate PGA beta-chain X->Cys predictions and rankings.
+Result: Completed.
+Status: EXECUTED AND VERIFIED
+
+Command: `.venv/bin/cysmutml predict --pdb validation/godoy2011/structures/2w22.pdb --chain A --model models/cysmutml_model.joblib --output validation/godoy2011/predictions/BTL2_wt --monocysteine-design`
+Purpose: Generate BTL2 wild-type-context X->Cys predictions and rankings.
+Result: Completed.
+Status: EXECUTED AND VERIFIED
+
+Command: `.venv/bin/cysmutml predict --pdb validation/godoy2011/structures/2w22_c64s_c295s_context.pdb --chain A --model models/cysmutml_model.joblib --output validation/godoy2011/predictions/BTL2_cysfree_context --monocysteine-design`
+Purpose: Generate BTL2 predictions in the cysteine-free experimental background.
+Result: Completed after correcting experimental C64/C295 labels to PDB residues A:65/A:296.
+Status: EXECUTED AND VERIFIED
+
+Command: Python validation-matrix script.
+Purpose: Compare CysMutML scores against Godoy accessibility, Lys counts, soluble activity, immobilization recovery, and stabilization factors.
+Result: Wrote validation CSV files and figures under `validation/godoy2011/`.
+Status: EXECUTED AND VERIFIED
+
+Command: `.venv/bin/pytest -q`
+Purpose: Final verification after adding Godoy validation artifacts and documentation.
+Result: 16 passed.
+Status: EXECUTED AND VERIFIED
+
+Command: `.venv/bin/ruff check .`
+Purpose: Final lint verification after adding Godoy validation artifacts and documentation.
+Result: All checks passed.
+Status: EXECUTED AND VERIFIED

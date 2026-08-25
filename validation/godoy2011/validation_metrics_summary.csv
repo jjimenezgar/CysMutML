@@ -1,0 +1,12 @@
+comparison,n,pearson,spearman,exact_agreement,mean_absolute_count_difference
+ML stability vs relative specific activity,13,0.1221007397476683,0.08709549019853546,,
+calculated vs reported accessibility,12,0.7183115089054709,0.6502646246229886,,
+calculated vs reported exposed Lys count,13,0.5083947185734895,0.47164376143573544,0.0,2.769230769230769
+BTL2 flexibility vs thermal stabilization,7,-0.02081223116549063,-0.14285714285714288,,
+BTL2 rigidification vs thermal stabilization,7,-0.07179054688611089,-0.1785714285714286,,
+BTL2 rigidification vs solvent stabilization,7,0.0486089303502637,0.03603749850782236,,
+PGA flexibility vs thermal stabilization,6,-0.30372836495282063,-0.2571428571428572,,
+PGA rigidification vs thermal stabilization,6,-0.04877694067003645,0.14285714285714288,,
+PGA rigidification vs solvent stabilization,6,-0.05347339579164141,0.028571428571428574,,
+combined rigidification vs thermal stabilization,13,0.4722006279075599,0.521978021978022,,
+combined rigidification vs solvent stabilization,13,0.42919679173948216,0.4683213362863224,,

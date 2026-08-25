@@ -156,11 +156,23 @@
     }
   },
   "ranking_weights": {
-    "stability": 0.5,
-    "accessibility": 0.3,
-    "rigidity": 0.2,
-    "protected_penalty": 0.1,
-    "existing_cys_penalty": 0.05
+    "cys_site": {
+      "stability": 0.6,
+      "accessibility": 0.35,
+      "existing_cys_penalty": 0.1,
+      "protected_penalty": 0.15
+    },
+    "rigidification": {
+      "flexibility": 0.35,
+      "lysine_environment": 0.4,
+      "accessibility": 0.25,
+      "existing_cys_penalty": 0.05,
+      "protected_penalty": 0.1
+    },
+    "final": {
+      "cys_site": 0.6,
+      "rigidification": 0.4
+    }
   },
   "stability_transform": {
     "favorable_ddg": -1.0,
@@ -222,8 +234,64 @@
     "summary": "results/ranking_sensitivity/sensitivity_summary.csv",
     "top10": "results/ranking_sensitivity/top10_by_scenario.csv"
   },
+  "godoy2011_validation": {
+    "status": "executed",
+    "prevalidation_config": "validation/godoy2011/prevalidation_config.yaml",
+    "prevalidation_config_sha256": "361b2f6cb47c1e07fc28005bcca8a4fdff4a3987d2f69b4428642120449641a6",
+    "model_retrained": false,
+    "structures": {
+      "PGA": "1K5Q",
+      "BTL2": "2W22",
+      "BTL2_cysfree_context": "validation/godoy2011/structures/2w22_c64s_c295s_context.pdb"
+    },
+    "mutants_evaluated": 13,
+    "metrics": {
+      "ml_stability_vs_relative_soluble_activity": {
+        "n": 13,
+        "pearson": 0.1221007397476683,
+        "spearman": 0.08709549019853546
+      },
+      "calculated_vs_reported_accessibility": {
+        "n": 12,
+        "pearson": 0.7183115089054709,
+        "spearman": 0.6502646246229886
+      },
+      "calculated_vs_reported_exposed_lys_count": {
+        "n": 13,
+        "pearson": 0.5083947185734895,
+        "spearman": 0.47164376143573544,
+        "exact_agreement": 0.0,
+        "mean_absolute_count_difference": 2.769230769230769
+      },
+      "combined_rigidification_vs_thermal_stabilization": {
+        "n": 13,
+        "pearson": 0.4722006279075599,
+        "spearman": 0.521978021978022
+      },
+      "combined_rigidification_vs_solvent_stabilization": {
+        "n": 13,
+        "pearson": 0.42919679173948216,
+        "spearman": 0.4683213362863224
+      }
+    },
+    "topk_final_engineering_score": {
+      "PGA": {
+        "top5": "0/6",
+        "top10": "1/6",
+        "top20pct": "4/6",
+        "top30pct": "4/6"
+      },
+      "BTL2": {
+        "top5": "0/7",
+        "top10": "0/7",
+        "top20pct": "3/7",
+        "top30pct": "4/7"
+      }
+    },
+    "report": "validation/godoy2011/VALIDATION_REPORT.md"
+  },
   "interpretability": "results/model_interpretability/ridge_coefficients.csv",
-  "pytest_status": "15 passed",
+  "pytest_status": "16 passed",
   "ruff_status": "all checks passed",
   "build_status": "wheel build passed: cysmutml-1.0.0-py3-none-any.whl",
   "release_ready": true,
@@ -232,7 +300,6 @@
   "cli_status": "cysmutml --help and cysmutml predict --help executed",
   "local_release_ready": true,
   "manual_actions": [
-    "initialize/push GitHub repository",
     "create GitHub release",
     "optionally add screenshots"
   ],

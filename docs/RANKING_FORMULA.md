@@ -1,6 +1,6 @@
-# CysMutML v1.0 Ranking Formula
+# CysMutML Ranking Formula
 
-The final `cys_suitability_score` is a deterministic engineering heuristic. It is not learned from immobilization data and is not a calibrated probability.
+The final engineering ranking is a deterministic heuristic. It is not learned from immobilization data and is not a calibrated probability.
 
 ## Predicted DDG
 
@@ -69,27 +69,50 @@ accessibility_component = clip(relative_sasa, 0, 1)
 
 High relative SASA means the residue is more solvent exposed in the static input structure. It does not guarantee cysteine chemistry or immobilization success.
 
-## B-Factor-Derived Rigidity Proxy
+## B-Factor-Derived Flexibility Proxy
 
-The v1.0 rigidity component uses the chain-normalized residue B-factor:
+The current rigidification heuristic uses the chain-normalized residue B-factor:
 
 ```text
 normalized_b_factor = (residue_mean_b_factor - chain_mean_b_factor) / chain_b_factor_std
 ```
 
-The ranking then maps this flexibility proxy to:
+For rigidification, higher local flexibility is treated as potentially more improvable by multipoint attachment:
 
 ```text
-rigidity_component = minmax_low_good(flexibility_value)
+flexibility_component = minmax_high_good(normalized_b_factor)
 ```
 
-Lower B-factor values receive higher `rigidity_component` within the target protein. If fewer than two valid values are available, the fallback is neutral:
+If fewer than two valid values are available, the fallback is neutral:
 
 ```text
-rigidity_component = 0.5
+flexibility_component = 0.5
 ```
 
 B-factors are not pure dynamics measurements. They depend on crystallographic refinement, disorder, occupancy, resolution, and model quality.
+
+The legacy `rigidity_component` column is preserved for backward compatibility, but it is not the main rigidification term.
+
+## Local Exposed Lys Environment
+
+The rigidification heuristic includes the number of exposed Lys residues near the candidate Cys.
+
+Defaults:
+
+```text
+radius = 20 Angstrom
+exposed Lys threshold = relative_sasa >= 0.25
+saturation_k = 3.0
+```
+
+Formula:
+
+```text
+lysine_environment_component =
+  local_exposed_lys_count / (local_exposed_lys_count + saturation_k)
+```
+
+This is a saturating boost, not a fitted probability. It reflects that glyoxyl-style multipoint attachment often benefits from nearby accessible amino groups, but the exact chemistry remains system-specific.
 
 ## Protected-Site Penalty
 
@@ -123,7 +146,7 @@ Distances to existing cysteines use C-alpha coordinates across all chains in the
 Default warning radius:
 
 ```text
-existing_cys_warning_radius_angstrom = 6.0
+existing_cys_warning_radius_angstrom = 10.0
 ```
 
 Default penalty radius:
@@ -143,25 +166,39 @@ Proximity to an existing cysteine is an engineering caution. It does not imply d
 
 ## Final Score
 
-Default v1.0 weights:
+The current ranking separates two intermediate scores.
+
+### Cys Site Suitability
 
 ```text
-stability_weight = 0.50
-accessibility_weight = 0.30
-rigidity_weight = 0.20
-protected_penalty_weight = 0.10
-existing_cys_penalty_weight = 0.05
+cys_site_suitability =
+  0.60 * stability_component
++ 0.35 * accessibility_component
+- 0.10 * existing_cys_penalty
+- 0.15 * protected_site_penalty
 ```
 
-Exact implemented formula:
+This score asks whether the site is a reasonable Cys mutation candidate.
+
+### Rigidification Potential
 
 ```text
-cys_suitability_score =
-  0.50 * stability_component
-+ 0.30 * accessibility_component
-+ 0.20 * rigidity_component
-- 0.10 * protected_site_penalty
+rigidification_potential =
+  0.35 * flexibility_component
++ 0.40 * lysine_environment_component
++ 0.25 * accessibility_component
 - 0.05 * existing_cys_penalty
+- 0.10 * protected_site_penalty
 ```
 
-All component columns are preserved in `residue_ranking.csv`, so the score can be reconstructed.
+This score asks whether the local structural environment may be practically useful for rigidifying immobilization chemistry.
+
+### Final Engineering Score
+
+```text
+final_engineering_score =
+  0.60 * cys_site_suitability
++ 0.40 * rigidification_potential
+```
+
+`cys_suitability_score` remains as an alias for `final_engineering_score` for backward compatibility. All component columns are preserved in `residue_ranking.csv`, so every score can be reconstructed.
