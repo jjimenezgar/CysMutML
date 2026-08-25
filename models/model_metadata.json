@@ -1,0 +1,22 @@
+{
+  "training_date": "2026-08-25T09:49:38.307109+00:00",
+  "dataset_source": "FireProtDB v2.0 API CSV export",
+  "feature_configuration": "physicochemical",
+  "target_definition": "destabilization_ddg_kcal_mol; positive means destabilizing",
+  "model_class": "ridge",
+  "hyperparameters": {
+    "alpha": 1.0,
+    "copy_X": true,
+    "fit_intercept": true,
+    "max_iter": null,
+    "positive": false,
+    "random_state": null,
+    "solver": "auto",
+    "tol": 0.0001
+  },
+  "software_versions": {
+    "python": "3.12.3",
+    "cysmutml": "1.0.0"
+  },
+  "git_commit": null
+}

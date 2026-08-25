@@ -1,0 +1,240 @@
+{
+  "project_version": "1.0.0",
+  "dataset_name": "FireProtDB v2.0 API CSV export",
+  "raw_rows": 613208,
+  "processed_rows": 555932,
+  "aggregated_rows": 352005,
+  "unique_proteins": 542,
+  "measurement_level_cys_rows": 25026,
+  "aggregated_x_to_cys_rows": 16236,
+  "deployed_model": "ridge",
+  "deployed_model_artifact": "models/cysmutml_model.joblib",
+  "feature_set": "physicochemical only",
+  "feature_count": 21,
+  "target": "destabilization_ddg_kcal_mol",
+  "target_convention": "larger positive values mean greater destabilization",
+  "validation_strategy": "3-fold GroupKFold by protein_id",
+  "models_evaluated": [
+    "dummy_mean",
+    "ridge",
+    "hist_gradient_boosting"
+  ],
+  "overall_metrics": {
+    "dummy_mean": {
+      "mae": {
+        "mean": 0.7997850334864864,
+        "std": 0.00875789486223247
+      },
+      "rmse": {
+        "mean": 1.0487753351906905,
+        "std": 0.018959637123169764
+      },
+      "r2": {
+        "mean": -0.0017546398420101,
+        "std": 0.00155708164934927
+      },
+      "pearson": {
+        "mean": null,
+        "std": null
+      },
+      "spearman": {
+        "mean": null,
+        "std": null
+      }
+    },
+    "hist_gradient_boosting": {
+      "mae": {
+        "mean": 0.6689837431392762,
+        "std": 0.01372562527709125
+      },
+      "rmse": {
+        "mean": 0.9171134533171662,
+        "std": 0.02332264625327277
+      },
+      "r2": {
+        "mean": 0.23408880518112143,
+        "std": 0.010841959527438234
+      },
+      "pearson": {
+        "mean": 0.48495029619806146,
+        "std": 0.011779212475877583
+      },
+      "spearman": {
+        "mean": 0.47537355958508204,
+        "std": 0.007810224319747393
+      }
+    },
+    "ridge": {
+      "mae": {
+        "mean": 0.6842070986731024,
+        "std": 0.013656463535291808
+      },
+      "rmse": {
+        "mean": 0.9297925173892065,
+        "std": 0.02275133847153831
+      },
+      "r2": {
+        "mean": 0.21275324915970784,
+        "std": 0.009615347288706425
+      },
+      "pearson": {
+        "mean": 0.4623791830432355,
+        "std": 0.010944447151793211
+      },
+      "spearman": {
+        "mean": 0.44988793215281864,
+        "std": 0.006882592631997631
+      }
+    }
+  },
+  "cys_metrics": {
+    "dummy_mean": {
+      "mae": {
+        "mean": 0.7392942226725193,
+        "std": 0.002404788304829663
+      },
+      "rmse": {
+        "mean": 0.9227142053711116,
+        "std": 0.014273503984987744
+      },
+      "r2": {
+        "mean": -0.17243917622776142,
+        "std": 0.05888325330722721
+      },
+      "pearson": {
+        "mean": null,
+        "std": null
+      },
+      "spearman": {
+        "mean": null,
+        "std": null
+      }
+    },
+    "hist_gradient_boosting": {
+      "mae": {
+        "mean": 0.5791551671102856,
+        "std": 0.025213943015790174
+      },
+      "rmse": {
+        "mean": 0.7951861794263336,
+        "std": 0.038970575799915294
+      },
+      "r2": {
+        "mean": 0.1310979422600597,
+        "std": 0.020168657161530157
+      },
+      "pearson": {
+        "mean": 0.3636741669908323,
+        "std": 0.02690382830632308
+      },
+      "spearman": {
+        "mean": 0.361845663547643,
+        "std": 0.009589918161085743
+      }
+    },
+    "ridge": {
+      "mae": {
+        "mean": 0.5870282478850138,
+        "std": 0.027076890739968898
+      },
+      "rmse": {
+        "mean": 0.8027249730406257,
+        "std": 0.03993855752589345
+      },
+      "r2": {
+        "mean": 0.11456604845719105,
+        "std": 0.021939894247843435
+      },
+      "pearson": {
+        "mean": 0.34822032072830456,
+        "std": 0.027161537937744465
+      },
+      "spearman": {
+        "mean": 0.34533082239265295,
+        "std": 0.012651720248008484
+      }
+    }
+  },
+  "ranking_weights": {
+    "stability": 0.5,
+    "accessibility": 0.3,
+    "rigidity": 0.2,
+    "protected_penalty": 0.1,
+    "existing_cys_penalty": 0.05
+  },
+  "stability_transform": {
+    "favorable_ddg": -1.0,
+    "unfavorable_ddg": 2.0,
+    "formula": "clip(1 - (predicted_ddg - favorable_ddg)/(unfavorable_ddg - favorable_ddg), 0, 1)"
+  },
+  "real_case_pdb": "1csp",
+  "real_case_chain": "A",
+  "real_case_candidate_count": 67,
+  "real_case_top_candidate": "F38C",
+  "real_case_top5": [
+    {
+      "rank_engineering": 1,
+      "mutation": "F38C",
+      "predicted_destabilization_ddg": -1.040221704415873,
+      "stability_component": 1.0,
+      "relative_sasa": 0.5620632841315458,
+      "rigidity_component": 0.8317966760059113,
+      "cys_suitability_score": 0.834978320440646
+    },
+    {
+      "rank_engineering": 2,
+      "mutation": "F27C",
+      "predicted_destabilization_ddg": -1.040221704415873,
+      "stability_component": 1.0,
+      "relative_sasa": 0.165573713816633,
+      "rigidity_component": 0.9854983045565084,
+      "cys_suitability_score": 0.7467717750562916
+    },
+    {
+      "rank_engineering": 3,
+      "mutation": "R56C",
+      "predicted_destabilization_ddg": -0.2006387570123466,
+      "stability_component": 0.733546252337449,
+      "relative_sasa": 0.7583430426407319,
+      "rigidity_component": 0.7118075461013034,
+      "cys_suitability_score": 0.7366375481812047
+    },
+    {
+      "rank_engineering": 4,
+      "mutation": "F30C",
+      "predicted_destabilization_ddg": -1.040221704415873,
+      "stability_component": 1.0,
+      "relative_sasa": 0.2415256432079832,
+      "rigidity_component": 0.8147313863869159,
+      "cys_suitability_score": 0.7354039702397782
+    },
+    {
+      "rank_engineering": 5,
+      "mutation": "W8C",
+      "predicted_destabilization_ddg": -1.169085950532918,
+      "stability_component": 1.0,
+      "relative_sasa": 0.3422561268141899,
+      "rigidity_component": 0.5847802737631533,
+      "cys_suitability_score": 0.7196328927968877
+    }
+  ],
+  "ranking_sensitivity": {
+    "summary": "results/ranking_sensitivity/sensitivity_summary.csv",
+    "top10": "results/ranking_sensitivity/top10_by_scenario.csv"
+  },
+  "interpretability": "results/model_interpretability/ridge_coefficients.csv",
+  "pytest_status": "15 passed",
+  "ruff_status": "all checks passed",
+  "build_status": "wheel build passed: cysmutml-1.0.0-py3-none-any.whl",
+  "release_ready": true,
+  "git_commit": null,
+  "license": "MIT",
+  "cli_status": "cysmutml --help and cysmutml predict --help executed",
+  "local_release_ready": true,
+  "manual_actions": [
+    "initialize/push GitHub repository",
+    "create GitHub release",
+    "optionally add screenshots"
+  ],
+  "real_case_input_pdb": "examples/real_case/1csp.pdb"
+}

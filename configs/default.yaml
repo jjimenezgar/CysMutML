@@ -1,0 +1,29 @@
+random_seed: 42
+cv_folds: 3
+classification_threshold: 1.0
+contact_radii_angstrom: [6.0, 8.0, 10.0]
+heavy_atom_contact_radius_angstrom: 4.5
+relative_sasa_reference: tien_2013
+feature_sets:
+  physicochemical:
+    include_structural: false
+  structural:
+    include_structural: true
+  expanded:
+    include_structural: true
+ranking:
+  weights:
+    stability: 0.50
+    accessibility: 0.30
+    rigidity: 0.20
+    protected_penalty: 0.10
+    existing_cys_penalty: 0.05
+  stability_reference_ddg_low: -1.0
+  stability_reference_ddg_high: 2.0
+  protected_site_radius_angstrom: 8.0
+  existing_cys_warning_radius_angstrom: 6.0
+  existing_cys_penalty_radius_angstrom: 6.0
+flexibility:
+  method: bfactor
+out_of_domain:
+  numeric_margin_fraction: 0.05

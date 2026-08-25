@@ -1,0 +1,9 @@
+cff-version: 1.2.0
+message: "If you use CysMutML, please cite it as software."
+title: "CysMutML: Hybrid ML and structural-bioinformatics prioritization of cysteine mutations"
+version: "1.0.0"
+date-released: "2026-08-25"
+authors:
+  - name: "John Connor"
+license: "MIT"
+abstract: "CysMutML is a lightweight hybrid ML and structural-bioinformatics pipeline for prioritizing candidate cysteine substitutions using FireProtDB-trained physicochemical mutation modeling and transparent target-PDB structural heuristics."

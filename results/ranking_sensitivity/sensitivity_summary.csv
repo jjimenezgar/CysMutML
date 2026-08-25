@@ -1,0 +1,4 @@
+scenario_vs_balanced,top5_overlap,top10_overlap,spearman_rank_correlation
+balanced,5,10,1.0
+stability_heavy,4,7,0.9469630457338974
+accessibility_heavy,2,4,0.6919945725915877
