@@ -1,0 +1,73 @@
+freeze_date: '2026-08-25'
+purpose: Prevalidation heuristic freeze before extracting Godoy et al. 2011 experimental
+  outcomes.
+git_commit: 1715ae38d0a850ef545408c611455dd85a5eb214
+model_path: models/cysmutml_model.joblib
+model_sha256: 55cc880543874d174e9fbba59226427ec544a60e08916c1b4fe3faafda981ce6
+rules: Do not modify weights, thresholds, lysine radius, cys penalties, or formulas
+  based on Godoy validation results.
+configuration:
+  random_seed: 42
+  cv_folds: 3
+  classification_threshold: 1.0
+  contact_radii_angstrom:
+  - 6.0
+  - 8.0
+  - 10.0
+  heavy_atom_contact_radius_angstrom: 4.5
+  relative_sasa_reference: tien_2013
+  feature_sets:
+    physicochemical:
+      include_structural: false
+    structural:
+      include_structural: true
+    expanded:
+      include_structural: true
+  ranking:
+    cys_site_weights:
+      stability: 0.6
+      accessibility: 0.35
+      existing_cys_penalty: 0.1
+      protected_penalty: 0.15
+    rigidification_weights:
+      flexibility: 0.35
+      lysine_environment: 0.4
+      accessibility: 0.25
+      existing_cys_penalty: 0.05
+      protected_penalty: 0.1
+    final_weights:
+      cys_site: 0.6
+      rigidification: 0.4
+    stability_reference_ddg_low: -1.0
+    stability_reference_ddg_high: 2.0
+    protected_site_radius_angstrom: 8.0
+  lysine_environment:
+    radius_angstrom: 20.0
+    exposure_relative_sasa_threshold: 0.25
+    saturation_k: 3.0
+  existing_cys:
+    warning_radius_angstrom: 10.0
+    strong_penalty_radius_angstrom: 6.0
+    count_radii_angstrom:
+    - 6.0
+    - 8.0
+    - 10.0
+    - 15.0
+    count_radius_angstrom: 10.0
+  monocysteine_design:
+    exposed_cys_relative_sasa_threshold: 0.25
+  flexibility:
+    method: bfactor
+  out_of_domain:
+    numeric_margin_fraction: 0.05
+ranking_formulas:
+  stability_component: clip(1 - (predicted_ddg - -1.0)/(2.0 - -1.0), 0, 1)
+  lysine_environment_component: 1 - exp(-local_exposed_lys_count / saturation_k)
+  cys_site_suitability: 0.60*stability + 0.35*accessibility - 0.10*existing_cys_penalty
+    - 0.15*protected_site_penalty
+  rigidification_potential: 0.35*flexibility + 0.40*lysine_environment + 0.25*accessibility
+    - 0.05*existing_cys_penalty - 0.10*protected_site_penalty
+  final_engineering_score: 0.60*cys_site_suitability + 0.40*rigidification_potential
+prevalidation_checks:
+  pytest: 16 passed
+  ruff: all checks passed
