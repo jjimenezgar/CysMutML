@@ -1,0 +1,71 @@
+name: Homology MVP Benchmark
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [portfolio-v1.1]
+    paths:
+      - ".github/workflows/homology-mvp.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install MMseqs2
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes mmseqs2
+          mmseqs version
+      - name: Install CysMutML
+        run: python -m pip install -e ".[dev]"
+      - name: Prepare FireProtDB
+        run: |
+          cysmutml prepare-data \
+            --download-fireprotdb \
+            --raw data/raw/fireprotdb.csv \
+            --output data/processed/fireprotdb_mutations.csv
+          cysmutml audit-data \
+            --processed data/processed/fireprotdb_mutations.csv \
+            --raw data/raw/fireprotdb.csv
+          cysmutml build-features \
+            --input data/processed/fireprotdb_mutations_aggregated.csv \
+            --output data/processed/fireprotdb_aggregated_features.csv
+      - name: Build homology clusters
+        run: |
+          cysmutml build-homology-clusters \
+            --input data/processed/fireprotdb_mutations_aggregated.csv \
+            --output data/processed/sequence_clusters.csv \
+            --min-sequence-identity 0.30 \
+            --coverage 0.80
+      - name: Run four-model MVP benchmark
+        run: |
+          cysmutml compare-grouping-strategies \
+            --features data/processed/fireprotdb_aggregated_features.csv \
+            --clusters data/processed/sequence_clusters.csv \
+            --results-dir results/homology_validation \
+            --models dummy_mean,ridge,random_forest,hist_gradient_boosting \
+            --target-proteins 150 \
+            --random-seed 42
+          python scripts/plot_homology_results.py \
+            --results-dir results/homology_validation
+      - name: Collect reproducibility artifacts
+        run: |
+          mkdir -p benchmark_artifact
+          cp -r results/homology_validation benchmark_artifact/
+          cp data/processed/sequence_clusters.metadata.json benchmark_artifact/
+          cp reports/data_quality_summary.md benchmark_artifact/ || true
+          cp reports/duplicate_measurement_summary.md benchmark_artifact/ || true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cysmutml-homology-mvp
+          path: benchmark_artifact/
+          retention-days: 30
