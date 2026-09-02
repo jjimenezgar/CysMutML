@@ -449,6 +449,12 @@ def compare_grouping_strategies(
         .agg(["mean", "std"])
         .reset_index()
     )
+    cys_summary.columns = [
+        "_".join(str(part) for part in column if str(part) != "").rstrip("_")
+        if isinstance(column, tuple)
+        else str(column)
+        for column in cys_summary.columns
+    ]
     cys_summary.to_csv(results_dir / "split_comparison_cys_summary.csv", index=False)
     write_tree_permutation_importance(
         attached,
@@ -482,6 +488,12 @@ def compare_grouping_strategies(
         .agg(["mean", "std"])
         .reset_index()
     )
+    summary.columns = [
+        "_".join(str(part) for part in column if str(part) != "").rstrip("_")
+        if isinstance(column, tuple)
+        else str(column)
+        for column in summary.columns
+    ]
     summary.to_csv(results_dir / "split_comparison_summary.csv", index=False)
     cluster_sizes = mapping.groupby("sequence_cluster")["protein_id"].nunique()
     audit = {
