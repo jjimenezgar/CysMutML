@@ -85,6 +85,7 @@ def feature_columns(
         "canonical_sequence",
         "source_row_index",
         "uniprot_id",
+        "fireprotdb_sequence_id",
         "pdb_id",
         "chain",
         "position",
