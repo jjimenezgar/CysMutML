@@ -6,12 +6,13 @@ The ranking is a deterministic heuristic built on top of the deployed ML predict
 
 For each possible X→Cys substitution, the pipeline computes:
 
-- **ML stability score**: the predicted destabilization DDG mapped to [0, 1]. Higher means a more favourable stability estimate.
+- **ML stability score**: predicted destabilization DDG mapped to [0, 1]. Higher means a more favourable stability estimate.
 - **Relative exposure**: relative SASA of the mutated residue in the input structure, clipped to [0, 1].
-- **Flexibility**: a min–max scaling of the chain-normalized mean B-factor. Higher values identify locally more flexible positions.
-- **Nearby Lys boost**: a saturating function of exposed lysines within 20 Å. It represents a simple proxy for a possible multipoint attachment environment.
+- **Flexibility**: min–max scaling of the chain-normalized mean B-factor. Higher values identify locally more flexible positions.
+- **Nearby Lys boost**: a saturating function of exposed lysines within 20 Å.
 - **Nearby Cys penalty**: a penalty for proximity to existing cysteines. It is an engineering caution, not a prediction of disulfide formation.
-- **Protected-site penalty**: an optional penalty for user-supplied protected residues within 8 Å.
+
+Protected residues can still be supplied through the CLI as an optional exclusion annotation. They are retained in exported files for traceability, but are not part of the default MVP score.
 
 ## Final score
 
@@ -19,15 +20,14 @@ The default weights are stored in `configs/default.yaml`:
 
 ```text
 final_priority =
-    0.50 * ML stability
-  + 0.20 * relative exposure
-  + 0.15 * flexibility
-  + 0.15 * nearby Lys boost
+    0.30 * ML stability
+  + 0.25 * relative exposure
+  + 0.25 * flexibility
+  + 0.10 * nearby Lys boost
   - 0.10 * nearby Cys penalty
-  - 0.10 * protected-site penalty
 ```
 
-The score is used only to order candidates. A higher value means that the candidate is more attractive under these explicit assumptions.
+Positive terms sum to 0.90; the remaining 0.10 is the maximum penalty contribution. The score is used only to order candidates.
 
 ## Interpretation
 
