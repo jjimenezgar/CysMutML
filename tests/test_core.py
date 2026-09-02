@@ -373,6 +373,8 @@ def test_homology_clusters_are_isolated_between_folds():
     )
     attached = attach_sequence_clusters(features, mapping)
     assignments = grouped_fold_assignments(attached, "sequence_cluster", n_splits=3)
+    protein_assignments = grouped_fold_assignments(attached, "protein_id", n_splits=3)
+    assert protein_assignments.groupby("protein_id")["fold"].nunique().eq(1).all()
     assert assignments.groupby("sequence_cluster")["fold"].nunique().eq(1).all()
     for fold in assignments["fold"].unique():
         test_clusters = set(assignments.loc[assignments["fold"] == fold, "sequence_cluster"])
