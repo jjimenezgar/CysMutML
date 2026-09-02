@@ -21,7 +21,7 @@ Portfolio hardening update: 2026-09-02
 - Ridge coefficient interpretability output generated.
 - PyMOL script and score-encoded PDB generation implemented.
 - Release documentation created.
-- Current automated test suite: 23 tests across Python 3.10 and 3.12 CI.
+- Current automated test suite: 24 tests across Python 3.10 and 3.12 CI.
 - Final lint passes: Ruff all checks passed.
 - Wheel build verified: `cysmutml-1.0.0-py3-none-any.whl`.
 
