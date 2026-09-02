@@ -54,7 +54,7 @@ data/processed/sequence_clusters.csv
 data/processed/sequence_clusters.metadata.json
 ```
 
-The mapping contains one cluster per protein. It fails if a protein has
+The mapping contains one cluster per protein with a valid canonical sequence. It fails if a protein has
 conflicting canonical sequences or if MMseqs2 does not return every input
 sequence.
 
@@ -84,8 +84,10 @@ results/homology_validation/split_comparison_summary.csv
 results/homology_validation/cluster_audit.json
 ```
 
-The grouping columns are explicitly excluded from model features. The comparison
-therefore changes only the split, not the information available to the model.
+Proteins without a cluster are excluded explicitly. Both strategies are then run
+on exactly the same mapped rows, and `cluster_audit.json` records source, included,
+and excluded counts. Grouping columns are excluded from model features. The
+comparison therefore changes only the split, not the dataset or model inputs.
 
 ## Interpretation
 
