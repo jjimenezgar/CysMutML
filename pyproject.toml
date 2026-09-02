@@ -23,6 +23,7 @@ dependencies = [
 [project.optional-dependencies]
 dev = ["build>=1.2", "pytest>=8.0", "ruff>=0.5"]
 portfolio = ["ipykernel>=6.29", "nbconvert>=7.16"]
+app = ["streamlit>=1.40"]
 
 [project.scripts]
 cysmutml = "cysmutml.cli:main"
