@@ -1,5 +1,9 @@
 # CysMutML
 
+[![CI](https://github.com/jjimenezgar/CysMutML/actions/workflows/ci.yml/badge.svg)](https://github.com/jjimenezgar/CysMutML/actions/workflows/ci.yml)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-3776AB.svg)](https://www.python.org/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+
 **CysMutML is a lightweight hybrid ML and structural-bioinformatics pipeline for prioritizing candidate cysteine substitutions in proteins.** It learns mutation-associated destabilization from FireProtDB using interpretable physicochemical features, then combines that prediction with target-PDB SASA, B-factor-derived flexibility, local exposed Lys context, protected-site, and existing-cysteine heuristics to produce a transparent Cys candidate ranking.
 
 ![CysMutML workflow](docs/figures/cysmutml_workflow.png)
@@ -7,6 +11,19 @@
 ## Why This Project?
 
 Cysteine substitutions are useful in protein engineering, labeling, immobilization, and conjugation, but a practical candidate should be both mutation-tolerant and structurally accessible. CysMutML demonstrates an end-to-end workflow for experimental data curation, leakage-safe ML validation, interpretable regression, structural bioinformatics, and transparent engineering prioritization.
+
+
+## Portfolio Review Path
+
+For a concise technical review, follow these artifacts in order:
+
+1. [Portfolio notebook](notebooks/CysMutML_Portfolio_Demo.ipynb): grouped validation, task-specific metrics, interpretability, and a real PDB case.
+2. [Model card](MODEL_CARD.md): intended use, evaluation design, limitations, and responsible interpretation.
+3. [Model comparison](results/physchem_model_comparison/): fold-level Ridge, HGB, and Dummy results.
+4. [Retrospective validation](validation/godoy2011/VALIDATION_REPORT.md): an honest audit against 13 published mutants.
+5. [Core tests](tests/test_core.py): data, leakage, serialization, structural features, inference, and score reconstruction.
+
+The CI workflow runs linting, tests, package build, and notebook execution from a clean checkout.
 
 ## Architecture
 
@@ -234,6 +251,8 @@ ruff: all checks passed
 
 ## Documentation
 
+- [`MODEL_CARD.md`](MODEL_CARD.md)
+- [`notebooks/CysMutML_Portfolio_Demo.ipynb`](notebooks/CysMutML_Portfolio_Demo.ipynb)
 - `docs/FEATURE_SCHEMA.md`
 - `docs/RANKING_FORMULA.md`
 - `docs/ML_VS_HEURISTIC.md`
