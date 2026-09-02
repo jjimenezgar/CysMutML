@@ -272,3 +272,26 @@ Command: `.venv/bin/ruff check .`
 Purpose: Final lint verification after adding Godoy validation artifacts and documentation.
 Result: All checks passed.
 Status: EXECUTED AND VERIFIED
+
+
+## 2026-09-02 Portfolio MVP Milestone
+
+Command: `cysmutml prepare-data --download-fireprotdb --raw data/raw/fireprotdb.csv --output data/processed/fireprotdb_mutations.csv`
+Purpose: Rebuild the FireProtDB table and enrich it with canonical reference sequences.
+Result: 613,208 raw rows; 555,932 valid substitutions; 194 UniProt sequences downloaded; one sequence retrieval failure.
+Status: EXECUTED AND VERIFIED
+
+Command: `cysmutml build-homology-clusters --min-sequence-identity 0.30 --coverage 0.80`
+Purpose: Build a reproducible MMseqs2 sequence-cluster mapping.
+Result: 171 proteins mapped into 157 clusters. Multi-sequence protein names use the most frequent reference sequence with a deterministic tie-break; unnamed proteins are excluded.
+Status: EXECUTED AND VERIFIED
+
+Command: `cysmutml compare-grouping-strategies --models dummy_mean,ridge,random_forest,hist_gradient_boosting --target-proteins 150 --random-seed 42`
+Purpose: Compare protein-grouped and homology-clustered validation on a matched, cluster-complete MVP subset.
+Result: 150 proteins and 5,634 rows evaluated with three folds. Compact fold metrics, X→Cys metrics, timing, permutation importance, manifest, and audit were versioned under `results/homology_validation/`.
+Status: EXECUTED AND VERIFIED
+
+Command: `.venv/bin/pytest -q` and `.venv/bin/ruff check .`
+Purpose: Verify sequence acquisition, leakage guards, model evaluation, and Streamlit integration.
+Result: 24 tests passed; Ruff passed in the GitHub Actions Python 3.10/3.12 matrix. Streamlit health probe passed.
+Status: EXECUTED AND VERIFIED
