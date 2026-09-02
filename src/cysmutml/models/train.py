@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import platform
 import subprocess
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 import joblib
@@ -287,7 +287,7 @@ def train_final_model(
     model_path.parent.mkdir(parents=True, exist_ok=True)
     joblib.dump(artifact, model_path)
     metadata = {
-        "training_date": datetime.now(UTC).isoformat(),
+        "training_date": datetime.now(timezone.utc).isoformat(),
         "dataset_source": "synthetic test data"
         if "synthetic" in str(feature_csv)
         else "FireProtDB v2.0 API CSV export",
