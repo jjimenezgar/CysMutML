@@ -106,20 +106,17 @@ The ML model supplies a stability term for each possible X→Cys substitution. T
 - **Flexibility:** chain-normalised B-factor, used as a proxy for local mobility.
 - **Nearby Lys boost:** rewards exposed lysines within the configured distance threshold.
 - **Existing Cys penalty:** reduces the score when nearby cysteines are already present.
-- **Protected-site penalty:** optional penalty for configured protected residues.
-
 The final engineering score is:
 
 ```text
-0.50 × ML stability
-+ 0.20 × relative SASA
-+ 0.15 × flexibility
-+ 0.15 × nearby Lys boost
+0.30 × ML stability
++ 0.25 × relative SASA
++ 0.25 × flexibility
++ 0.10 × nearby Lys boost
 − 0.10 × existing Cys penalty
-− 0.10 × protected-site penalty
 ```
 
-Weights are configurable in `configs/default.yaml` and the implementation details are in [docs/RANKING_FORMULA.md](docs/RANKING_FORMULA.md). Scores are intended for ranking candidates, not as calibrated probabilities.
+Weights are configurable in `configs/default.yaml`. Protected residues can be supplied as an optional exclusion annotation, but are not part of the default MVP score. Implementation details are in [docs/RANKING_FORMULA.md](docs/RANKING_FORMULA.md). Scores are intended for ranking candidates, not as calibrated probabilities.
 
 ## Reproducibility
 
