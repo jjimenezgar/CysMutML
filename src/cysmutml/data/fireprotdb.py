@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 from urllib.parse import quote, urlencode
 from urllib.request import urlopen
@@ -13,6 +14,7 @@ from cysmutml.mutations import parse_mutation
 
 FIREPROTDB_SEARCH_URL = "https://loschmidt.chemi.muni.cz/fireprotdb/api/search"
 FIREPROTDB_SEQUENCE_URL = "https://loschmidt.chemi.muni.cz/fireprotdb/api/sequences"
+UNIPROT_SEQUENCE_URL = "https://rest.uniprot.org/uniprotkb"
 
 
 def download_fireprotdb_csv(output_path: str | Path) -> Path:
@@ -55,6 +57,36 @@ def download_fireprotdb_sequences(
     if not sequences:
         raise RuntimeError("FireProtDB returned no canonical sequences")
     return sequences, failed
+
+
+def download_uniprot_sequences(
+    accessions: list[str],
+) -> tuple[dict[str, str], list[str]]:
+    """Fetch reference sequences for accessions present in the FireProtDB export."""
+    sequences: dict[str, str] = {}
+    failed: list[str] = []
+    for accession in sorted(set(accessions)):
+        try:
+            url = f"{UNIPROT_SEQUENCE_URL}/{quote(accession, safe='')}.fasta"
+            with urlopen(url, timeout=30) as response:
+                lines = response.read().decode("utf-8").splitlines()
+            sequence = "".join(line.strip() for line in lines if not line.startswith(">")).upper()
+            if not sequence:
+                raise ValueError("empty sequence")
+            sequences[accession] = sequence
+        except (OSError, UnicodeError, ValueError):
+            failed.append(accession)
+    if not sequences:
+        raise RuntimeError("UniProt returned no canonical sequences")
+    return sequences, failed
+
+
+def _uniprot_accession(value: object) -> str | None:
+    identifier = _identifier(value)
+    if identifier is None:
+        return None
+    tokens = [token for token in re.split(r"[,;|\\s]+", identifier) if token]
+    return tokens[0] if tokens else None
 
 
 def _identifier(value: object) -> str | None:
@@ -169,18 +201,27 @@ def prepare_data(
     raw_path: str | Path,
     output_path: str | Path,
     fetch_sequences: bool = False,
-) -> dict[str, int | None]:
+) -> dict[str, int | str | None]:
     df = pd.read_csv(raw_path, low_memory=False)
     normalized, summary = normalize_fireprotdb_table(df)
     if fetch_sequences:
         sequence_ids = normalized["fireprotdb_sequence_id"].dropna().astype(str).unique().tolist()
-        if not sequence_ids:
-            raise ValueError("FireProtDB export has no SOURCE_SEQUENCE_ID values")
-        sequences, failed = download_fireprotdb_sequences(sequence_ids)
-        fetched = normalized["fireprotdb_sequence_id"].map(sequences)
+        if sequence_ids:
+            sequences, failed = download_fireprotdb_sequences(sequence_ids)
+            fetched = normalized["fireprotdb_sequence_id"].map(sequences)
+            source = "fireprotdb_sequence_id"
+        else:
+            accessions = normalized["uniprot_id"].map(_uniprot_accession)
+            unique_accessions = accessions.dropna().unique().tolist()
+            if not unique_accessions:
+                raise ValueError("FireProtDB export has no sequence or UniProt identifiers")
+            sequences, failed = download_uniprot_sequences(unique_accessions)
+            fetched = accessions.map(sequences)
+            source = "uniprot_id"
         normalized["canonical_sequence"] = normalized["canonical_sequence"].fillna(fetched)
         summary["canonical_sequences_downloaded"] = len(sequences)
         summary["canonical_sequence_download_failures"] = len(failed)
+        summary["canonical_sequence_source"] = source
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     normalized.to_csv(output_path, index=False)
