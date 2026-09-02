@@ -133,10 +133,11 @@ def _humanize_ranking(ranking: pd.DataFrame) -> pd.DataFrame:
         "rank_engineering",
         "mutation",
         "predicted_destabilization_ddg",
-        "relative_sasa",
-        "stability_component",
-        "accessibility_component",
-        "rigidification_potential",
+        "stability_score",
+        "sasa_score",
+        "flexibility_score",
+        "lysine_boost",
+        "existing_cys_penalty",
         "final_engineering_score",
     ]
     available = [column for column in columns if column in ranking.columns]
@@ -147,9 +148,11 @@ def _humanize_ranking(ranking: pd.DataFrame) -> pd.DataFrame:
             "mutation": "Candidate",
             "predicted_destabilization_ddg": "Predicted ΔΔG",
             "relative_sasa": "Relative exposure",
-            "stability_component": "Stability signal",
-            "accessibility_component": "Accessibility",
-            "rigidification_potential": "Rigidity potential",
+            "stability_score": "ML stability",
+            "sasa_score": "Relative exposure",
+            "flexibility_score": "Flexibility",
+            "lysine_boost": "Nearby Lys boost",
+            "existing_cys_penalty": "Nearby Cys penalty",
             "final_engineering_score": "Final priority",
         }
     )
@@ -410,15 +413,22 @@ def render_prediction() -> None:
 
     chart_columns = [
         column
-        for column in ["stability_component", "accessibility_component", "rigidification_potential", "final_engineering_score"]
+        for column in [
+            "stability_score",
+            "sasa_score",
+            "flexibility_score",
+            "lysine_boost",
+            "final_engineering_score",
+        ]
         if column in shown
     ]
     if chart_columns:
         chart = shown.set_index("mutation")[chart_columns].rename(
             columns={
-                "stability_component": "Stability",
-                "accessibility_component": "Accessibility",
-                "rigidification_potential": "Rigidity potential",
+                "stability_score": "ML stability",
+                "sasa_score": "Exposure",
+                "flexibility_score": "Flexibility",
+                "lysine_boost": "Lys boost",
                 "final_engineering_score": "Final priority",
             }
         )
