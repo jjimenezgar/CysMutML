@@ -76,8 +76,12 @@ def validate_cluster_mapping(mapping: pd.DataFrame) -> pd.DataFrame:
     return clean.drop_duplicates("protein_id").reset_index(drop=True)
 
 
-def attach_sequence_clusters(features: pd.DataFrame, mapping: pd.DataFrame) -> pd.DataFrame:
-    """Attach clusters and fail rather than silently falling back to protein grouping."""
+def attach_sequence_clusters(
+    features: pd.DataFrame,
+    mapping: pd.DataFrame,
+    require_complete: bool = True,
+) -> pd.DataFrame:
+    """Attach clusters with explicit handling of proteins lacking sequences."""
     clean_mapping = validate_cluster_mapping(mapping)
     attached = features.copy()
     attached["protein_id"] = attached["protein_id"].astype(str)
@@ -88,11 +92,13 @@ def attach_sequence_clusters(features: pd.DataFrame, mapping: pd.DataFrame) -> p
         validate="many_to_one",
     )
     missing = sorted(attached.loc[attached["sequence_cluster"].isna(), "protein_id"].unique())
-    if missing:
+    if missing and require_complete:
         preview = ", ".join(missing[:10])
         raise ValueError(
             f"Cluster mapping does not cover {len(missing)} proteins; first missing: {preview}"
         )
+    if missing:
+        attached = attached[attached["sequence_cluster"].notna()].copy()
     return attached
 
 
@@ -249,7 +255,12 @@ def compare_grouping_strategies(
 
     features = pd.read_csv(feature_csv, low_memory=False)
     mapping = pd.read_csv(cluster_mapping_csv)
-    attached = attach_sequence_clusters(features, mapping)
+    source_proteins = set(features["protein_id"].astype(str))
+    mapped_proteins = set(validate_cluster_mapping(mapping)["protein_id"])
+    attached = attach_sequence_clusters(features, mapping, require_complete=False)
+    included_proteins = set(attached["protein_id"].astype(str))
+    if attached["sequence_cluster"].nunique() < 2:
+        raise ValueError("At least two mapped sequence clusters are required for comparison")
     results_dir = Path(results_dir)
     results_dir.mkdir(parents=True, exist_ok=True)
 
@@ -285,11 +296,15 @@ def compare_grouping_strategies(
     summary.to_csv(results_dir / "split_comparison_summary.csv", index=False)
     cluster_sizes = mapping.groupby("sequence_cluster")["protein_id"].nunique()
     audit = {
-        "proteins": int(mapping["protein_id"].nunique()),
+        "source_proteins": int(len(source_proteins)),
+        "mapped_proteins": int(len(mapped_proteins)),
+        "included_proteins": int(len(included_proteins)),
+        "excluded_proteins_without_cluster": int(len(source_proteins - mapped_proteins)),
         "sequence_clusters": int(mapping["sequence_cluster"].nunique()),
         "largest_cluster": int(cluster_sizes.max()),
         "median_cluster_size": float(cluster_sizes.median()),
-        "feature_rows": int(len(attached)),
+        "source_feature_rows": int(len(features)),
+        "included_feature_rows": int(len(attached)),
     }
     (results_dir / "cluster_audit.json").write_text(json.dumps(audit, indent=2))
     return summary
