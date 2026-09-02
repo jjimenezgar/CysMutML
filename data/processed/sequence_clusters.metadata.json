@@ -1,0 +1,23 @@
+{
+  "method": "MMseqs2 easy-cluster",
+  "min_sequence_identity": 0.3,
+  "coverage": 0.8,
+  "coverage_mode": 0,
+  "proteins": 171,
+  "clusters": 157,
+  "proteins_with_sequence_variants": 13,
+  "reference_sequence_policy": "most frequent sequence per protein; lexicographic tie-break",
+  "command": [
+    "/usr/bin/mmseqs",
+    "easy-cluster",
+    "/tmp/cysmutml_mmseqs_wbj8liln/proteins.fasta",
+    "/tmp/cysmutml_mmseqs_wbj8liln/clusters",
+    "/tmp/cysmutml_mmseqs_wbj8liln/tmp",
+    "--min-seq-id",
+    "0.3",
+    "-c",
+    "0.8",
+    "--cov-mode",
+    "0"
+  ]
+}
