@@ -2,10 +2,6 @@ name: Homology MVP Benchmark
 
 on:
   workflow_dispatch:
-  push:
-    branches: ["homology-validation-v1.2"]
-    paths:
-      - ".github/workflows/homology-mvp.yml"
 
 permissions:
   contents: read
