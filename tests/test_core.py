@@ -219,6 +219,8 @@ def test_duplicate_aggregation_uses_median(tmp_path):
             "measure": ["CD", "CD", "CD"],
             "source_dataset": ["x", "x", "x"],
             "pdb_id": ["1abc", "1abc", "2abc"],
+            "canonical_sequence": ["ACDE", "ACDE", "KLMN"],
+            "fireprotdb_sequence_id": ["17", "17", "18"],
         }
     )
     input_csv = tmp_path / "processed.csv"
@@ -233,6 +235,8 @@ def test_duplicate_aggregation_uses_median(tmp_path):
     row = agg[agg["mutation"] == "A1C"].iloc[0]
     assert row["median_destabilization_ddg"] == 1.0
     assert row["n_measurements"] == 2
+    assert row["canonical_sequence"] == "ACDE"
+    assert str(row["fireprotdb_sequence_id"]) == "17"
 
 
 def test_structural_cv_folds_have_no_protein_overlap(tmp_path):
