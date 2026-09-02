@@ -25,8 +25,7 @@ protein_id
 canonical_sequence
 ```
 
-CysMutML now preserves `canonical_sequence` during median aggregation. Existing
-locally generated aggregated tables must be rebuilt once.
+When `prepare-data` is run with `--download-fireprotdb`, CysMutML also resolves each documented `SOURCE_SEQUENCE_ID` through the FireProtDB sequence endpoint and stores `canonical_sequence`. Existing local raw exports can be enriched with `--fetch-sequences`. The median-aggregated table preserves both the sequence and its FireProtDB identifier, so previously generated tables must be rebuilt once.
 
 ## Build sequence clusters
 
