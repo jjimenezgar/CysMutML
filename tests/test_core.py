@@ -2,13 +2,20 @@ from pathlib import Path
 
 import joblib
 import pandas as pd
+import pytest
 from sklearn.model_selection import GroupKFold
 
 from cysmutml.amino_acids import physicochemical_features
 from cysmutml.data.audit import audit_duplicates_and_aggregate
 from cysmutml.data.fireprotdb import normalize_fireprotdb_table
+from cysmutml.evaluation.homology import (
+    attach_sequence_clusters,
+    grouped_fold_assignments,
+    unique_protein_sequences,
+    validate_cluster_mapping,
+)
 from cysmutml.evaluation.structural_ablation import make_structural_cv_folds
-from cysmutml.features.build import build_feature_table
+from cysmutml.features.build import build_feature_table, feature_columns
 from cysmutml.models.inference import (
     _parse_protected_residues,
     generate_cys_feature_rows,
@@ -291,3 +298,70 @@ def test_local_lys_and_cys_environment_columns():
     assert "existing_cys_count_8A" in generated
     assert "existing_cys_count_10A" in generated
     assert (generated["lysine_radius_angstrom"] == 20.0).all()
+
+
+
+def test_homology_clusters_are_isolated_between_folds():
+    features = pd.DataFrame(
+        {
+            "protein_id": ["p1", "p2", "p3", "p4", "p5", "p6"],
+            "mutation": ["A1C"] * 6,
+        }
+    )
+    mapping = pd.DataFrame(
+        {
+            "protein_id": ["p1", "p2", "p3", "p4", "p5", "p6"],
+            "sequence_cluster": ["c1", "c1", "c2", "c2", "c3", "c3"],
+        }
+    )
+    attached = attach_sequence_clusters(features, mapping)
+    assignments = grouped_fold_assignments(attached, "sequence_cluster", n_splits=3)
+    assert assignments.groupby("sequence_cluster")["fold"].nunique().eq(1).all()
+    for fold in assignments["fold"].unique():
+        test_clusters = set(assignments.loc[assignments["fold"] == fold, "sequence_cluster"])
+        train_clusters = set(assignments.loc[assignments["fold"] != fold, "sequence_cluster"])
+        assert test_clusters.isdisjoint(train_clusters)
+
+
+def test_homology_mapping_fails_on_conflicts_and_missing_proteins():
+    conflicting = pd.DataFrame(
+        {
+            "protein_id": ["p1", "p1"],
+            "sequence_cluster": ["c1", "c2"],
+        }
+    )
+    with pytest.raises(ValueError, match="multiple clusters"):
+        validate_cluster_mapping(conflicting)
+
+    features = pd.DataFrame({"protein_id": ["p1", "p2"]})
+    incomplete = pd.DataFrame({"protein_id": ["p1"], "sequence_cluster": ["c1"]})
+    with pytest.raises(ValueError, match="does not cover"):
+        attach_sequence_clusters(features, incomplete)
+
+
+def test_sequence_group_metadata_never_becomes_a_model_feature():
+    table = pd.DataFrame(
+        {
+            "protein_id": ["p1", "p2"],
+            "sequence_cluster": ["c1", "c2"],
+            "representative_protein_id": ["p1", "p2"],
+            "wt_aa": ["A", "K"],
+            "mut_aa": ["C", "C"],
+            "delta_mass": [1.0, 2.0],
+            "destabilization_ddg_kcal_mol": [0.1, 0.2],
+        }
+    )
+    numeric, categorical = feature_columns(table, include_structural=False)
+    assert numeric == ["delta_mass"]
+    assert categorical == ["wt_aa", "mut_aa"]
+
+
+def test_unique_sequences_rejects_conflicting_protein_records():
+    table = pd.DataFrame(
+        {
+            "protein_id": ["p1", "p1", "p2"],
+            "canonical_sequence": ["ACDE", "ACDF", "KLMN"],
+        }
+    )
+    with pytest.raises(ValueError, match="2 canonical sequences"):
+        unique_protein_sequences(table)
