@@ -508,7 +508,7 @@ def render_methods() -> None:
         **Calculated from the target structure**
 
         Relative exposure, B-factor-derived flexibility, local exposed-lysine context,
-        existing-cysteine context and optional protected-site penalties.
+        existing-cysteine context. Protected residues, when supplied, are kept as an optional exclusion annotation and do not change the default MVP score.
 
         **Interpretation**
 
