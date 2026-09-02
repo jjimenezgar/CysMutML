@@ -108,8 +108,6 @@ def select_cluster_complete_subset(
     table: pd.DataFrame,
     target_proteins: int,
     random_seed: int = 42,
-    permutation_sample_rows: int = 2000,
-    permutation_repeats: int = 3,
 ) -> pd.DataFrame:
     """Select whole sequence clusters until the target protein count is reached."""
     if target_proteins < 2:
