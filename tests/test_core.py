@@ -341,12 +341,11 @@ def test_ranking_score_reconstruction_and_penalties(tmp_path):
         - 0.10 * first["protected_site_penalty"]
     )
     final = (
-        0.50 * first["stability_score"]
-        + 0.20 * first["sasa_score"]
-        + 0.15 * first["flexibility_score"]
-        + 0.15 * first["lysine_boost"]
+        0.30 * first["stability_score"]
+        + 0.25 * first["sasa_score"]
+        + 0.25 * first["flexibility_score"]
+        + 0.10 * first["lysine_boost"]
         - 0.10 * first["existing_cys_penalty"]
-        - 0.10 * first["protected_site_penalty"]
     )
     assert abs(first["cys_site_suitability"] - site) < 1e-9
     assert abs(first["rigidification_potential"] - rigidification) < 1e-9
