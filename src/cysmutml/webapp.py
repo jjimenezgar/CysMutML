@@ -153,7 +153,6 @@ def render_overview() -> None:
     st.markdown(
         """
         <div class="hero">
-          <h1>CysMutML</h1>
           <p>Interpretable machine learning and structural analysis for X→Cys prioritisation.</p>
         </div>
         """,
