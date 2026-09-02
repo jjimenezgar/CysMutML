@@ -12,20 +12,14 @@ feature_sets:
   expanded:
     include_structural: true
 ranking:
-  cys_site_weights:
-    stability: 0.60
-    accessibility: 0.35
+  # Weights for the single transparent engineering score.
+  score_weights:
+    stability: 0.50
+    sasa: 0.20
+    flexibility: 0.15
+    lysine_boost: 0.15
     existing_cys_penalty: 0.10
-    protected_penalty: 0.15
-  rigidification_weights:
-    flexibility: 0.35
-    lysine_environment: 0.40
-    accessibility: 0.25
-    existing_cys_penalty: 0.05
     protected_penalty: 0.10
-  final_weights:
-    cys_site: 0.60
-    rigidification: 0.40
   stability_reference_ddg_low: -1.0
   stability_reference_ddg_high: 2.0
   protected_site_radius_angstrom: 8.0
