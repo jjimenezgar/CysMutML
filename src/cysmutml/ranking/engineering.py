@@ -185,14 +185,15 @@ def rank_predictions(
 
     # Backward-compatible aliases for exported CSV consumers.
     df["cys_site_suitability"] = (
-        0.65 * df["stability_score"]
+        0.60 * df["stability_score"]
         + 0.35 * df["sasa_score"]
         - 0.10 * df["existing_cys_penalty"]
         - 0.15 * df["protected_site_penalty"]
     )
     df["rigidification_potential"] = (
-        0.60 * df["flexibility_score"]
+        0.35 * df["flexibility_score"]
         + 0.40 * df["lysine_boost"]
+        + 0.25 * df["sasa_score"]
         - 0.05 * df["existing_cys_penalty"]
         - 0.10 * df["protected_site_penalty"]
     )
