@@ -21,7 +21,7 @@ Portfolio hardening update: 2026-09-02
 - Ridge coefficient interpretability output generated.
 - PyMOL script and score-encoded PDB generation implemented.
 - Release documentation created.
-- Final v1.0 tests pass: 16 passed.
+- Current automated test suite: 21 passed.
 - Final lint passes: Ruff all checks passed.
 - Wheel build verified: `cysmutml-1.0.0-py3-none-any.whl`.
 
@@ -32,6 +32,9 @@ Portfolio hardening update: 2026-09-02
 - Added an executable end-to-end portfolio notebook.
 - Added a model card documenting intended use, evaluation, and limitations.
 - Added a concise reviewer path to the README.
+- Added MMseqs2 sequence-cluster generation and homology-aware CV comparison.
+- Added explicit leakage guards so cluster identifiers cannot enter model features.
+- Added matched-subset coverage auditing for proteins without canonical sequences.
 
 ## CURRENT MODEL METRICS
 
@@ -118,6 +121,7 @@ It used 114 mapped rows and 6 X->Cys observations. It is underpowered and not pa
 - Compare ESM sequence embeddings as an optional ML feature family.
 - Add ANM/ProDy rigidity as an optional heuristic component.
 - Improve uncertainty estimation.
+- Execute the documented 30%/40%/50% homology-threshold sensitivity study.
 
 ## RELEASE NOTES
 
