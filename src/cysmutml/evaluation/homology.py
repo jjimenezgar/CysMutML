@@ -57,10 +57,10 @@ def validate_cluster_mapping(mapping: pd.DataFrame) -> pd.DataFrame:
         raise ValueError(f"Cluster mapping is missing columns: {sorted(missing)}")
 
     clean = mapping.copy()
-    clean["protein_id"] = clean["protein_id"].astype(str)
-    clean["sequence_cluster"] = clean["sequence_cluster"].astype(str)
     if clean[["protein_id", "sequence_cluster"]].isna().any().any():
         raise ValueError("Cluster mapping contains missing identifiers")
+    clean["protein_id"] = clean["protein_id"].astype(str)
+    clean["sequence_cluster"] = clean["sequence_cluster"].astype(str)
     if clean["protein_id"].str.strip().eq("").any():
         raise ValueError("Cluster mapping contains empty protein identifiers")
     if clean["sequence_cluster"].str.strip().eq("").any():
