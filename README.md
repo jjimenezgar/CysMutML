@@ -48,6 +48,7 @@ The ML model and the structural heuristic are intentionally separate.
 - Download and preprocess FireProtDB mutation-stability data.
 - Aggregate repeated protein/mutation measurements by median DDG.
 - Train/evaluate physicochemical models with protein-grouped cross-validation.
+- Audit residual homology leakage with optional MMseqs2 sequence-clustered validation.
 - Predict `predicted_destabilization_ddg` for every X->Cys mutation in a PDB chain.
 - Rank candidates using transparent, configurable `cys_site_suitability`, `rigidification_potential`, and `final_engineering_score` formulas.
 - Export ML predictions, ranking CSVs, a score-encoded PDB, and a PyMOL script.
@@ -259,6 +260,7 @@ ruff: all checks passed
 - `docs/MODEL_STATUS_REPORT.md`
 - `docs/SCIENTIFIC_AUDIT.md`
 - `docs/INTERVIEW_GUIDE.md`
+- [`docs/HOMOLOGY_VALIDATION.md`](docs/HOMOLOGY_VALIDATION.md)
 
 ## Limitations
 
@@ -268,6 +270,7 @@ ruff: all checks passed
 - SASA does not guarantee cysteine chemistry.
 - Ranking weights are heuristic unless experimentally calibrated.
 - FireProtDB measurements are heterogeneous across proteins, methods, temperature, and pH.
+- Protein-grouped CV may still share homologous families across folds; v1.2 adds a stricter sequence-clustered comparison.
 - This is not a state-of-the-art DDG predictor.
 
 ## Exploratory Work
