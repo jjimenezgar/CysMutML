@@ -108,6 +108,15 @@ def available_chains(structure_path: str | Path) -> list[str]:
 def _metric_summary(metrics: pd.DataFrame) -> pd.DataFrame:
     columns = ["mae", "rmse", "r2", "pearson", "spearman"]
     summary = metrics.groupby("model")[columns].mean().sort_values("mae").round(3)
+    summary.index = summary.index.map(
+        {
+            "dummy_mean": "Baseline (mean)",
+            "ridge": "Ridge",
+            "random_forest": "Random forest",
+            "hist_gradient_boosting": "Gradient boosting",
+        }
+    )
+    summary.index.name = "Model"
     return summary.rename(
         columns={
             "mae": "MAE",
@@ -243,6 +252,14 @@ def render_benchmark() -> None:
 
     st.markdown("**Mean absolute error**")
     mean_mae = overall.groupby("model")["mae"].mean().sort_values()
+    mean_mae.index = mean_mae.index.map(
+        {
+            "dummy_mean": "Baseline (mean)",
+            "ridge": "Ridge",
+            "random_forest": "Random forest",
+            "hist_gradient_boosting": "Gradient boosting",
+        }
+    )
     st.bar_chart(mean_mae, horizontal=True, x_label="MAE (kcal/mol)")
 
     homology_folds = ROOT / "results" / "homology_validation" / "split_comparison_fold_metrics.csv"
