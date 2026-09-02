@@ -58,6 +58,17 @@ X->Cys subset:
 | Ridge | 0.587 | 0.803 | 0.115 | 0.348 | 0.345 |
 | HistGradientBoosting | 0.579 | 0.795 | 0.131 | 0.364 | 0.362 |
 
+
+## HOMOLOGY-AWARE MVP (EXECUTED)
+
+- Run: MMseqs2 at 30% identity / 80% coverage, deterministic seed 42.
+- Coverage: 543 source protein names; 171 mapped into 157 clusters; 372 excluded without usable sequence.
+- Matched subset: 150 proteins and 5,634 mutation rows; four models; three folds.
+- Overall MAE: protein grouped — Dummy 1.493, Ridge 1.508, RF 1.538, HGB 1.529.
+- Overall MAE: homology clustered — Dummy 1.499, Ridge 1.523, RF 1.544, HGB 1.534.
+- X→Cys Ridge MAE: 1.535 protein grouped versus 1.630 homology clustered.
+- Full fold metrics, timings, permutation importance, and audit: results/homology_validation/.
+
 ## REAL CASE STUDY
 
 - PDB: `1csp`
