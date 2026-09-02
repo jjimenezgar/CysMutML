@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from urllib.error import URLError
 from urllib.parse import quote, urlencode
 from urllib.request import urlopen
 
@@ -51,7 +50,7 @@ def download_fireprotdb_sequences(
             if not normalized or normalized in {"NAN", "NONE"}:
                 raise ValueError("empty sequence")
             sequences[sequence_id] = normalized
-        except (OSError, TypeError, ValueError, URLError):
+        except (OSError, TypeError, ValueError):
             failed.append(sequence_id)
     if not sequences:
         raise RuntimeError("FireProtDB returned no canonical sequences")
