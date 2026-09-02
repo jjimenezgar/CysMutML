@@ -158,28 +158,42 @@ def rank_predictions(
     )
     df["existing_cys_penalty"] = np.clip(0.7 * distance_penalty + 0.3 * count_penalty, 0.0, 1.0)
 
+    # Single transparent engineering score. Every positive signal is normalized
+    # to [0, 1]; nearby cysteines and protected sites act as penalties.
+    df["stability_score"] = df["stability_component"]
+    df["sasa_score"] = df["accessibility_component"]
+    df["flexibility_score"] = df["flexibility_component"]
+    df["lysine_boost"] = df["lysine_environment_component"]
+
+    ranking_weights = {
+        "stability": 0.50,
+        "sasa": 0.20,
+        "flexibility": 0.15,
+        "lysine_boost": 0.15,
+        "existing_cys_penalty": 0.10,
+        "protected_penalty": 0.10,
+    }
+    df["final_engineering_score"] = (
+        ranking_weights["stability"] * df["stability_score"]
+        + ranking_weights["sasa"] * df["sasa_score"]
+        + ranking_weights["flexibility"] * df["flexibility_score"]
+        + ranking_weights["lysine_boost"] * df["lysine_boost"]
+        - ranking_weights["existing_cys_penalty"] * df["existing_cys_penalty"]
+        - ranking_weights["protected_penalty"] * df["protected_site_penalty"]
+    )
+
+    # Backward-compatible aliases for exported CSV consumers.
     df["cys_site_suitability"] = (
-        float(cys_site_weights.get("stability", 0.60)) * df["stability_component"]
-        + float(cys_site_weights.get("accessibility", 0.35)) * df["accessibility_component"]
-        - float(cys_site_weights.get("existing_cys_penalty", 0.10))
-        * df["existing_cys_penalty"]
-        - float(cys_site_weights.get("protected_penalty", 0.15))
-        * df["protected_site_penalty"]
+        0.65 * df["stability_score"]
+        + 0.35 * df["sasa_score"]
+        - 0.10 * df["existing_cys_penalty"]
+        - 0.15 * df["protected_site_penalty"]
     )
     df["rigidification_potential"] = (
-        float(rigidification_weights.get("flexibility", 0.35)) * df["flexibility_component"]
-        + float(rigidification_weights.get("lysine_environment", 0.40))
-        * df["lysine_environment_component"]
-        + float(rigidification_weights.get("accessibility", 0.25))
-        * df["accessibility_component"]
-        - float(rigidification_weights.get("existing_cys_penalty", 0.05))
-        * df["existing_cys_penalty"]
-        - float(rigidification_weights.get("protected_penalty", 0.10))
-        * df["protected_site_penalty"]
-    )
-    df["final_engineering_score"] = (
-        float(final_weights.get("cys_site", 0.60)) * df["cys_site_suitability"]
-        + float(final_weights.get("rigidification", 0.40)) * df["rigidification_potential"]
+        0.60 * df["flexibility_score"]
+        + 0.40 * df["lysine_boost"]
+        - 0.05 * df["existing_cys_penalty"]
+        - 0.10 * df["protected_site_penalty"]
     )
     df["cys_suitability_score"] = df["final_engineering_score"]
     df["ranking_formula"] = (
