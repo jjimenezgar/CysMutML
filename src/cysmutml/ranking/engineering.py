@@ -82,6 +82,8 @@ def rank_predictions(
     ranking_config = config.get("ranking", {})
     lys_config = config.get("lysine_environment", {})
     existing_cys_config = config.get("existing_cys", {})
+    # Used only to report the optional protected-residue annotation.
+    protected_radius = float(ranking_config.get("protected_site_radius_angstrom", 8.0))
     existing_cys_warning_radius = float(
         existing_cys_config.get("warning_radius_angstrom", 10.0)
     )
