@@ -37,15 +37,19 @@ def audit_duplicates_and_aggregate(
     key = ["protein_id", "wt_aa", "position", "mut_aa"]
     df["destabilization_ddg_kcal_mol"] = df["destabilization_ddg_kcal_mol"].astype(float)
     grouped = df.groupby(key, dropna=False)
-    aggregate_df = grouped.agg(
-        n_measurements=("destabilization_ddg_kcal_mol", "size"),
-        median_destabilization_ddg=("destabilization_ddg_kcal_mol", "median"),
-        mean_destabilization_ddg=("destabilization_ddg_kcal_mol", "mean"),
-        std_destabilization_ddg=("destabilization_ddg_kcal_mol", "std"),
-        min_destabilization_ddg=("destabilization_ddg_kcal_mol", "min"),
-        max_destabilization_ddg=("destabilization_ddg_kcal_mol", "max"),
-        pdb_id_values=("pdb_id", "first"),
-    ).reset_index()
+    aggregation = {
+        "n_measurements": ("destabilization_ddg_kcal_mol", "size"),
+        "median_destabilization_ddg": ("destabilization_ddg_kcal_mol", "median"),
+        "mean_destabilization_ddg": ("destabilization_ddg_kcal_mol", "mean"),
+        "std_destabilization_ddg": ("destabilization_ddg_kcal_mol", "std"),
+        "min_destabilization_ddg": ("destabilization_ddg_kcal_mol", "min"),
+        "max_destabilization_ddg": ("destabilization_ddg_kcal_mol", "max"),
+        "pdb_id_values": ("pdb_id", "first"),
+    }
+    for column in ("canonical_sequence", "uniprot_id"):
+        if column in df.columns:
+            aggregation[column] = (column, "first")
+    aggregate_df = grouped.agg(**aggregation).reset_index()
     aggregate_df["std_destabilization_ddg"] = aggregate_df["std_destabilization_ddg"].fillna(0.0)
     aggregate_df["mutation"] = (
         aggregate_df["wt_aa"].astype(str)
@@ -107,6 +111,9 @@ def audit_duplicates_and_aggregate(
         "n_measurements",
         "pdb_id_values",
     ]
+    ordered.extend(
+        column for column in ("canonical_sequence", "uniprot_id") if column in aggregate_df
+    )
     aggregate_df[ordered].to_csv(aggregated_csv, index=False)
 
     category_counts = duplicate_df["duplicate_category"].value_counts().to_dict()
