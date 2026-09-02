@@ -27,7 +27,7 @@ def _normalized_sequence(value: object) -> str:
 
 
 def unique_protein_sequences(table: pd.DataFrame) -> pd.DataFrame:
-    """Return one verified canonical sequence per protein."""
+    """Select one deterministic reference sequence per protein."""
     required = {"protein_id", "canonical_sequence"}
     missing = required - set(table.columns)
     if missing:
@@ -35,16 +35,24 @@ def unique_protein_sequences(table: pd.DataFrame) -> pd.DataFrame:
 
     rows = []
     for protein_id, group in table.groupby("protein_id", dropna=False):
-        sequences = {
+        sequences = [
             _normalized_sequence(value)
             for value in group["canonical_sequence"].dropna()
             if str(value).strip()
-        }
+        ]
         if not sequences:
             continue
-        if len(sequences) != 1:
-            raise ValueError(f"Protein {protein_id!r} has {len(sequences)} canonical sequences")
-        rows.append({"protein_id": str(protein_id), "canonical_sequence": sequences.pop()})
+        counts = pd.Series(sequences).value_counts()
+        highest_count = int(counts.max())
+        selected = sorted(counts[counts.eq(highest_count)].index.astype(str))[0]
+        rows.append(
+            {
+                "protein_id": str(protein_id),
+                "canonical_sequence": selected,
+                "sequence_variants": int(counts.size),
+                "selected_sequence_records": highest_count,
+            }
+        )
 
     if len(rows) < 2:
         raise ValueError("At least two proteins with canonical sequences are required")
@@ -271,6 +279,12 @@ def build_mmseqs_cluster_map(
             "coverage_mode": 0,
             "proteins": int(len(mapping)),
             "clusters": int(mapping["sequence_cluster"].nunique()),
+            "proteins_with_sequence_variants": int(
+                proteins["sequence_variants"].gt(1).sum()
+            ),
+            "reference_sequence_policy": (
+                "most frequent sequence per protein; lexicographic tie-break"
+            ),
             "command": command,
         }
         output_csv.with_suffix(".metadata.json").write_text(json.dumps(metadata, indent=2))
