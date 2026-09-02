@@ -47,7 +47,9 @@ def download_fireprotdb_sequences(
             url = f"{FIREPROTDB_SEQUENCE_URL}/{quote(sequence_id, safe='')}/sequence"
             with urlopen(url, timeout=30) as response:
                 payload = json.loads(response.read().decode("utf-8"))
-            sequence = payload if isinstance(payload, str) else payload.get("sequence")
+            sequence = payload if isinstance(payload, str) else None
+            if isinstance(payload, dict):
+                sequence = payload.get("sequence")
             normalized = "".join(str(sequence).split()).upper()
             if not normalized or normalized in {"NAN", "NONE"}:
                 raise ValueError("empty sequence")
@@ -85,7 +87,7 @@ def _uniprot_accession(value: object) -> str | None:
     identifier = _identifier(value)
     if identifier is None:
         return None
-    tokens = [token for token in re.split(r"[,;|\\s]+", identifier) if token]
+    tokens = [token for token in re.split(r"[,;|\s]+", identifier) if token]
     return tokens[0] if tokens else None
 
 
