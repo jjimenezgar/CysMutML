@@ -82,7 +82,6 @@ def rank_predictions(
     ranking_config = config.get("ranking", {})
     lys_config = config.get("lysine_environment", {})
     existing_cys_config = config.get("existing_cys", {})
-    protected_radius = float(ranking_config.get("protected_site_radius_angstrom", 8.0))
     existing_cys_warning_radius = float(
         existing_cys_config.get("warning_radius_angstrom", 10.0)
     )
@@ -156,22 +155,20 @@ def rank_predictions(
     df["existing_cys_penalty"] = np.clip(0.7 * distance_penalty + 0.3 * count_penalty, 0.0, 1.0)
 
     # Single transparent engineering score. Every positive signal is normalized
-    # to [0, 1]; nearby cysteines and protected sites act as penalties.
+    # to [0, 1]; nearby cysteines act as a penalty. Protected residues, when supplied,
+    # remain available as an informational column but are not part of the MVP score.
     df["stability_score"] = df["stability_component"]
     df["sasa_score"] = df["accessibility_component"]
     df["flexibility_score"] = df["flexibility_component"]
     df["lysine_boost"] = df["lysine_environment_component"]
 
     ranking_weights = {
-        "stability": float(ranking_config.get("score_weights", {}).get("stability", 0.50)),
-        "sasa": float(ranking_config.get("score_weights", {}).get("sasa", 0.20)),
-        "flexibility": float(ranking_config.get("score_weights", {}).get("flexibility", 0.15)),
-        "lysine_boost": float(ranking_config.get("score_weights", {}).get("lysine_boost", 0.15)),
+        "stability": float(ranking_config.get("score_weights", {}).get("stability", 0.30)),
+        "sasa": float(ranking_config.get("score_weights", {}).get("sasa", 0.25)),
+        "flexibility": float(ranking_config.get("score_weights", {}).get("flexibility", 0.25)),
+        "lysine_boost": float(ranking_config.get("score_weights", {}).get("lysine_boost", 0.10)),
         "existing_cys_penalty": float(
             ranking_config.get("score_weights", {}).get("existing_cys_penalty", 0.10)
-        ),
-        "protected_penalty": float(
-            ranking_config.get("score_weights", {}).get("protected_penalty", 0.10)
         ),
     }
     df["final_engineering_score"] = (
@@ -180,7 +177,6 @@ def rank_predictions(
         + ranking_weights["flexibility"] * df["flexibility_score"]
         + ranking_weights["lysine_boost"] * df["lysine_boost"]
         - ranking_weights["existing_cys_penalty"] * df["existing_cys_penalty"]
-        - ranking_weights["protected_penalty"] * df["protected_site_penalty"]
     )
 
     # Backward-compatible aliases for exported CSV consumers.
@@ -199,9 +195,8 @@ def rank_predictions(
     )
     df["cys_suitability_score"] = df["final_engineering_score"]
     df["ranking_formula"] = (
-        "final_priority = 0.50*ml_stability + 0.20*relative_exposure + "
-        "0.15*flexibility + 0.15*nearby_lys_boost - 0.10*nearby_cys_penalty "
-        "- 0.10*protected_site_penalty"
+        "final_priority = 0.30*ml_stability + 0.25*relative_exposure + "
+        "0.25*flexibility + 0.10*nearby_lys_boost - 0.10*nearby_cys_penalty"
     )
 
     df = df.sort_values(
