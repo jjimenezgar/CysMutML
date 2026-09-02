@@ -25,7 +25,7 @@ protein_id
 canonical_sequence
 ```
 
-When `prepare-data` is run with `--download-fireprotdb`, CysMutML also resolves each documented `SOURCE_SEQUENCE_ID` through the FireProtDB sequence endpoint and stores `canonical_sequence`. Existing local raw exports can be enriched with `--fetch-sequences`. The median-aggregated table preserves both the sequence and its FireProtDB identifier, so previously generated tables must be rebuilt once.
+When `prepare-data` is run with `--download-fireprotdb`, CysMutML enriches the export with canonical sequences. It uses the documented FireProtDB sequence endpoint when `SOURCE_SEQUENCE_ID` is available and otherwise falls back to the exported UniProt accession. Existing local raw exports can be enriched with `--fetch-sequences`. The median-aggregated table preserves the sequence and its available provenance identifier, so previously generated tables must be rebuilt once.
 
 ## Build sequence clusters
 
