@@ -1,6 +1,8 @@
 # CysMutML Project Status
 
-Date: 2026-08-25
+Release baseline date: 2026-08-25
+
+Portfolio hardening update: 2026-09-02
 
 ## V1.0 COMPLETE AND VERIFIED
 
@@ -19,9 +21,17 @@ Date: 2026-08-25
 - Ridge coefficient interpretability output generated.
 - PyMOL script and score-encoded PDB generation implemented.
 - Release documentation created.
-- Final v1.0 tests pass: 15 passed.
+- Final v1.0 tests pass: 16 passed.
 - Final lint passes: Ruff all checks passed.
 - Wheel build verified: `cysmutml-1.0.0-py3-none-any.whl`.
+
+## PORTFOLIO HARDENING
+
+- Added GitHub Actions CI for Python 3.10 and 3.12.
+- Made tests self-contained for clean repository checkouts.
+- Added an executable end-to-end portfolio notebook.
+- Added a model card documenting intended use, evaluation, and limitations.
+- Added a concise reviewer path to the README.
 
 ## CURRENT MODEL METRICS
 
