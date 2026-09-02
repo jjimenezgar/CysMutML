@@ -11,6 +11,7 @@ from cysmutml.data.fireprotdb import normalize_fireprotdb_table
 from cysmutml.evaluation.homology import (
     attach_sequence_clusters,
     grouped_fold_assignments,
+    select_cluster_complete_subset,
     unique_protein_sequences,
     validate_cluster_mapping,
 )
@@ -405,5 +406,25 @@ def test_model_evaluation_accepts_homology_groups(tmp_path):
         group_column="sequence_cluster",
     )
     assert set(metrics["group_column"]) == {"sequence_cluster"}
+    assert (metrics["fit_seconds"] >= 0).all()
+    assert (metrics["predict_seconds"] >= 0).all()
     assert set(predictions["group_column"]) == {"sequence_cluster"}
     assert predictions.groupby("group_id")["fold"].nunique().eq(1).all()
+
+
+
+def test_mvp_subset_is_deterministic_and_keeps_clusters_complete():
+    table = pd.DataFrame(
+        {
+            "protein_id": [f"p{index}" for index in range(1, 9)],
+            "sequence_cluster": ["c1", "c1", "c2", "c2", "c3", "c3", "c4", "c4"],
+        }
+    )
+    first = select_cluster_complete_subset(table, target_proteins=3, random_seed=42)
+    second = select_cluster_complete_subset(table, target_proteins=3, random_seed=42)
+    pd.testing.assert_frame_equal(first.reset_index(drop=True), second.reset_index(drop=True))
+    assert first["protein_id"].nunique() >= 3
+    for cluster in first["sequence_cluster"].unique():
+        expected = set(table.loc[table["sequence_cluster"] == cluster, "protein_id"])
+        observed = set(first.loc[first["sequence_cluster"] == cluster, "protein_id"])
+        assert observed == expected
