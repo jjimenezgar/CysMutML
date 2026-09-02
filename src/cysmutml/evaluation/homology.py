@@ -168,7 +168,9 @@ def grouped_fold_assignments(
     for fold, (_, test_idx) in enumerate(splitter.split(table, groups=groups), start=1):
         assignment.iloc[test_idx] = fold
 
-    result = table[["protein_id", group_column]].copy()
+    result = table[["protein_id"]].copy()
+    if group_column != "protein_id":
+        result[group_column] = table[group_column].to_numpy()
     result["fold"] = assignment.astype(int)
     cluster_fold_counts = result.groupby(group_column)["fold"].nunique()
     if not cluster_fold_counts.eq(1).all():
