@@ -253,6 +253,13 @@ def render_benchmark() -> None:
         st.markdown("**X→Cys subset**")
         st.dataframe(_metric_summary(cys), use_container_width=True)
 
+    st.info(
+        "The models beat the mean baseline, but the explained variance is modest. "
+        "Gradient boosting is slightly better than Ridge in this benchmark; Ridge remains "
+        "deployed because it is simpler and easier to interpret. The stricter homology-clustered "
+        "split increases the error, which is an important generalisation caveat."
+    )
+
     st.markdown("**Mean absolute error**")
     mean_mae = overall.groupby("model")["mae"].mean().sort_values()
     mean_mae.index = mean_mae.index.map(
