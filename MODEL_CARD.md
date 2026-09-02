@@ -60,9 +60,10 @@ Primary evaluation groups rows by protein, so mutations from the same protein do
 not appear in both train and test folds. Random mutation-level splitting is not
 used as the headline result.
 
-This design does not guarantee separation of homologous proteins. A future
-sequence-cluster split is required to estimate performance on remote protein
-families.
+This design does not guarantee separation of homologous proteins. CysMutML v1.2
+adds an MMseqs2-based sequence-cluster split to estimate performance on less-related
+protein families. The infrastructure is CI-tested; numerical results are not claimed
+until the FireProtDB tables are regenerated and the experiment is executed.
 
 ## Known limitations
 
