@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import platform
 import subprocess
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -61,8 +62,12 @@ def evaluate_models(
 
     for model_name, estimator in models.items():
         for fold, (train_idx, test_idx) in enumerate(splitter.split(X, y, groups), start=1):
+            fit_start = time.perf_counter()
             estimator.fit(X.iloc[train_idx], y.iloc[train_idx])
+            fit_seconds = time.perf_counter() - fit_start
+            predict_start = time.perf_counter()
             pred = estimator.predict(X.iloc[test_idx])
+            predict_seconds = time.perf_counter() - predict_start
             fold_metrics = regression_metrics(y.iloc[test_idx], pred)
             metrics_rows.append(
                 {
@@ -71,6 +76,8 @@ def evaluate_models(
                     "group_column": group_column,
                     "n_train_groups": int(groups.iloc[train_idx].nunique()),
                     "n_test_groups": int(groups.iloc[test_idx].nunique()),
+                    "fit_seconds": fit_seconds,
+                    "predict_seconds": predict_seconds,
                     **fold_metrics,
                 }
             )
