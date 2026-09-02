@@ -46,7 +46,10 @@ def make_regressors(
                 (
                     "model",
                     RandomForestRegressor(
-                        n_estimators=100, random_state=random_seed, min_samples_leaf=2
+                        n_estimators=100,
+                        random_state=random_seed,
+                        min_samples_leaf=2,
+                        n_jobs=-1,
                     ),
                 ),
             ]
