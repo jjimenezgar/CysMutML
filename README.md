@@ -50,6 +50,8 @@ A reduced benchmark was run on 150 proteins and 5,634 mutation rows. Sequences w
 
 Mean MAE, lower is better. On the X→Cys subset, Ridge scored 1.535 with protein grouping and 1.630 with homology clustering.
 
+**How to read the splits.** `Protein grouped` keeps every mutation from a protein in one fold, so test proteins are unseen during training. `Homology clustered` first groups similar sequences with MMseqs2 and keeps each whole cluster in one fold; it is a stricter test against residual sequence relatedness.
+
 This is a small portfolio benchmark, not a state-of-the-art claim. The full fold metrics, timing measurements, sampling audit and permutation importance are in [docs/HOMOLOGY_VALIDATION.md](docs/HOMOLOGY_VALIDATION.md).
 
 ## Streamlit app
@@ -106,6 +108,7 @@ The ML model supplies a stability term for each possible X→Cys substitution. T
 - **Flexibility:** chain-normalised B-factor, used as a proxy for local mobility.
 - **Nearby Lys boost:** rewards exposed lysines within the configured distance threshold.
 - **Existing Cys penalty:** reduces the score when nearby cysteines are already present.
+
 The final engineering score is:
 
 ```text
