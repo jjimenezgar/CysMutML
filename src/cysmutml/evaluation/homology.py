@@ -344,7 +344,7 @@ def compare_grouping_strategies(
     )
     summary = (
         combined.groupby(["split_strategy", "model"])[
-            ["mae", "rmse", "r2", "pearson", "spearman"]
+            ["mae", "rmse", "r2", "pearson", "spearman", "fit_seconds", "predict_seconds"]
         ]
         .agg(["mean", "std"])
         .reset_index()
