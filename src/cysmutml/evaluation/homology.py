@@ -35,6 +35,8 @@ def unique_protein_sequences(table: pd.DataFrame) -> pd.DataFrame:
 
     rows = []
     for protein_id, group in table.groupby("protein_id", dropna=False):
+        if pd.isna(protein_id) or not str(protein_id).strip():
+            continue
         sequences = [
             _normalized_sequence(value)
             for value in group["canonical_sequence"].dropna()
