@@ -35,8 +35,8 @@ The deployed model uses amino-acid physicochemical descriptors:
 - one-hot encoded wild-type and mutant amino-acid identities.
 
 Structural descriptors are not training features in v1.0. SASA, B-factor-derived
-flexibility, protected-site distance, local exposed Lys context, and native-Cys
-context belong to the separate engineering heuristic.
+flexibility, optional user-defined protected-site annotations, local exposed Lys
+context, and native-Cys context belong to the separate engineering heuristic.
 
 ## Performance
 
