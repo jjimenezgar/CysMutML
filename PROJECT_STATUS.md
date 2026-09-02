@@ -21,7 +21,7 @@ Portfolio hardening update: 2026-09-02
 - Ridge coefficient interpretability output generated.
 - PyMOL script and score-encoded PDB generation implemented.
 - Release documentation created.
-- Current automated test suite: 21 passed.
+- Current automated test suite: 22 tests across Python 3.10 and 3.12 CI.
 - Final lint passes: Ruff all checks passed.
 - Wheel build verified: `cysmutml-1.0.0-py3-none-any.whl`.
 
@@ -35,6 +35,10 @@ Portfolio hardening update: 2026-09-02
 - Added MMseqs2 sequence-cluster generation and homology-aware CV comparison.
 - Added explicit leakage guards so cluster identifiers cannot enter model features.
 - Added matched-subset coverage auditing for proteins without canonical sequences.
+- Added deterministic, cluster-complete sampling for a lightweight 150-protein MVP.
+- Added Dummy, Ridge, Random Forest, and HistGradientBoosting comparison with runtime measurements.
+- Added X→Cys metrics, Ridge coefficients, held-out tree-model permutation importance, and portfolio figures.
+- Added a four-tab Streamlit portfolio app with real PDB inference and downloadable outputs.
 
 ## CURRENT MODEL METRICS
 
@@ -118,10 +122,9 @@ It used 114 mapped rows and 6 X->Cys observations. It is underpowered and not pa
 
 - Add an external S669 benchmark with overlap audit.
 - Experimentally calibrate ranking weights if real Cys-engineering outcomes become available.
-- Compare ESM sequence embeddings as an optional ML feature family.
 - Add ANM/ProDy rigidity as an optional heuristic component.
 - Improve uncertainty estimation.
-- Execute the documented 30%/40%/50% homology-threshold sensitivity study.
+- Execute a 30%/40%/50% homology-threshold sensitivity study after the MVP, if compute budget justifies it.
 
 ## RELEASE NOTES
 
