@@ -370,6 +370,7 @@ def compare_grouping_strategies(
     permutation_repeats: int = 3,
 ) -> pd.DataFrame:
     """Compare protein-grouped and homology-cluster-grouped CV."""
+    from cysmutml.evaluation.metrics import regression_metrics
     from cysmutml.models.train import evaluate_models
 
     features = pd.read_csv(feature_csv, low_memory=False)
@@ -387,6 +388,7 @@ def compare_grouping_strategies(
     results_dir.mkdir(parents=True, exist_ok=True)
 
     all_metrics = []
+    all_cys_metrics = []
     strategies = [
         ("protein_grouped", "protein_id"),
         ("homology_clustered", "sequence_cluster"),
@@ -395,7 +397,7 @@ def compare_grouping_strategies(
         attached_csv = Path(temporary) / "features_with_clusters.csv"
         attached.to_csv(attached_csv, index=False)
         for strategy, group_column in strategies:
-            metrics, _, _ = evaluate_models(
+            metrics, predictions, _ = evaluate_models(
                 attached_csv,
                 results_dir / strategy,
                 config_path=config_path,
@@ -405,9 +407,33 @@ def compare_grouping_strategies(
             )
             metrics.insert(0, "split_strategy", strategy)
             all_metrics.append(metrics)
+            cys_predictions = predictions[predictions["mut_aa"].astype(str).eq("C")]
+            cys_rows = []
+            for (model, fold), fold_df in cys_predictions.groupby(["model", "fold"]):
+                values = regression_metrics(fold_df["observed"], fold_df["predicted"])
+                cys_rows.append(
+                    {
+                        "split_strategy": strategy,
+                        "model": model,
+                        "fold": int(fold),
+                        "n_cys_test": int(len(fold_df)),
+                        **values,
+                    }
+                )
+            all_cys_metrics.append(pd.DataFrame(cys_rows))
 
     combined = pd.concat(all_metrics, ignore_index=True)
     combined.to_csv(results_dir / "split_comparison_fold_metrics.csv", index=False)
+    combined_cys = pd.concat(all_cys_metrics, ignore_index=True)
+    combined_cys.to_csv(results_dir / "split_comparison_cys_metrics.csv", index=False)
+    cys_summary = (
+        combined_cys.groupby(["split_strategy", "model"])[
+            ["mae", "rmse", "r2", "pearson", "spearman"]
+        ]
+        .agg(["mean", "std"])
+        .reset_index()
+    )
+    cys_summary.to_csv(results_dir / "split_comparison_cys_summary.csv", index=False)
     write_tree_permutation_importance(
         attached,
         "sequence_cluster",
