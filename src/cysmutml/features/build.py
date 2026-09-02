@@ -89,6 +89,8 @@ def feature_columns(
         "chain",
         "position",
         "protein_id",
+        "sequence_cluster",
+        "representative_protein_id",
         "mutation",
         "method",
         "measure",
