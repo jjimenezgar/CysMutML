@@ -80,9 +80,6 @@ def rank_predictions(
 ) -> pd.DataFrame:
     config = load_config(config_path)
     ranking_config = config.get("ranking", {})
-    cys_site_weights = ranking_config.get("cys_site_weights", {})
-    rigidification_weights = ranking_config.get("rigidification_weights", {})
-    final_weights = ranking_config.get("final_weights", {})
     lys_config = config.get("lysine_environment", {})
     existing_cys_config = config.get("existing_cys", {})
     protected_radius = float(ranking_config.get("protected_site_radius_angstrom", 8.0))
