@@ -199,8 +199,9 @@ def rank_predictions(
     )
     df["cys_suitability_score"] = df["final_engineering_score"]
     df["ranking_formula"] = (
-        "final_engineering_score = final_site_weight*cys_site_suitability + "
-        "final_rigidification_weight*rigidification_potential"
+        "final_priority = 0.50*ml_stability + 0.20*relative_exposure + "
+        "0.15*flexibility + 0.15*nearby_lys_boost - 0.10*nearby_cys_penalty "
+        "- 0.10*protected_site_penalty"
     )
 
     df = df.sort_values(
