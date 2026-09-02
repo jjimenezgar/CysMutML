@@ -53,9 +53,7 @@ data/processed/sequence_clusters.csv
 data/processed/sequence_clusters.metadata.json
 ```
 
-The mapping contains one cluster per protein with a valid canonical sequence. It fails if a protein has
-conflicting canonical sequences or if MMseqs2 does not return every input
-sequence.
+The mapping contains one cluster per protein with a valid reference sequence. If a protein name is associated with multiple sequence variants, the most frequent sequence is selected with a lexicographic tie-break; the metadata records the number of affected proteins and the policy. The command fails if MMseqs2 does not return every input sequence.
 
 ## Compare grouping strategies
 
@@ -118,7 +116,7 @@ be selected before inspecting downstream performance.
 Automated tests verify that:
 
 - each protein maps to exactly one cluster;
-- incomplete and conflicting mappings fail loudly;
+- incomplete and conflicting protein-to-cluster mappings fail loudly;
 - a sequence cluster appears in exactly one test fold;
 - cluster identifiers and representative identifiers never enter the ML feature matrix;
 - reduced sampling is deterministic and preserves complete clusters;
