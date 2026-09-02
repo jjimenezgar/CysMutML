@@ -366,6 +366,8 @@ def compare_grouping_strategies(
     config_path: str | Path = "configs/default.yaml",
     target_proteins: int | None = 150,
     random_seed: int = 42,
+    permutation_sample_rows: int = 2000,
+    permutation_repeats: int = 3,
 ) -> pd.DataFrame:
     """Compare protein-grouped and homology-cluster-grouped CV."""
     from cysmutml.models.train import evaluate_models
