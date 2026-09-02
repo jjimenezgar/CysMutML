@@ -109,6 +109,23 @@ X->Cys subset:
 
 HGB is slightly better, but Ridge remains deployed because it is close in performance, simpler, faster, and easier to interpret.
 
+### Reduced homology-aware MVP
+
+The reproducible 30% identity / 80% coverage run selected complete clusters with seed
+42: 150 proteins, 5,634 mutation rows, 171 mapped proteins, and 157 sequence clusters.
+Mean three-fold MAE was:
+
+| Split | Dummy | Ridge | Random Forest | HistGradientBoosting |
+|---|---:|---:|---:|---:|
+| Protein grouped | 1.493 | 1.508 | 1.538 | 1.529 |
+| Homology clustered | 1.499 | 1.523 | 1.544 | 1.534 |
+
+On X→Cys rows, Ridge was 1.535 vs 1.630 MAE (protein vs homology split). The
+stricter estimate is intentionally presented as an MVP validation demonstration, not
+as a state-of-the-art claim. Full fold metrics, timing, sampling audit, and permutation
+importance are in [docs/HOMOLOGY_VALIDATION.md](docs/HOMOLOGY_VALIDATION.md).
+
+
 ## Quick Start
 
 Install:
