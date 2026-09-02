@@ -13,7 +13,7 @@ It combines two separate signals:
 
 The model estimates mutation-associated destabilisation. The structural layer then ranks candidates using solvent exposure, a flexibility proxy and configurable local penalties. The final score is a prioritisation heuristic, not a probability of experimental success.
 
-![CysMutML workflow](docs/figures/cysmutml_workflow.png)
+![CysMutML](docs/figures/cysmutml_github_cover.jpg)
 
 ## What the project demonstrates
 
@@ -62,7 +62,7 @@ python3 -m venv .venv
 The app includes:
 
 - benchmark summaries;
-- the bundled 1CSP example or an uploaded PDB;
+- the bundled 1CSP example, an uploaded structure, an RCSB/PDB identifier or a UniProt accession;
 - X→Cys predictions for a selected chain;
 - candidate ranking and component plots;
 - CSV, score-encoded PDB and PyMOL downloads;
