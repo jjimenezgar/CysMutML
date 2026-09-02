@@ -10,14 +10,13 @@ It combines two separate signals:
 1. a physicochemical ML model trained on FireProtDB mutation data;
 2. structural information from a target PDB structure.
 
-The model estimates mutation-associated destabilisation. The structural layer then ranks candidates using solvent exposure, a flexibility proxy and configurable local penalties. The final score is a prioritisation heuristic, not a probability of experimental success.
+The model estimates mutation-associated destabilisation. The structural layer then ranks candidates with a transparent engineering score. The result is a prioritisation heuristic, not a probability of experimental success.
 
 ![CysMutML](docs/figures/cysmutml_github_cover.jpg)
 
 [![Tests](https://img.shields.io/badge/tests-24%20passed-2ea44f?style=for-the-badge&logo=pytest&logoColor=white)](https://github.com/jjimenezgar/CysMutML/actions)
 [![CI](https://img.shields.io/badge/CI-passing-2ea44f?style=for-the-badge&logo=githubactions&logoColor=white)](https://github.com/jjimenezgar/CysMutML/actions)
 [![Launch Streamlit](https://img.shields.io/badge/Launch%20Streamlit-2ea44f?style=for-the-badge&logo=streamlit&logoColor=white)](https://cysmutml.streamlit.app)
-
 
 ## What the project demonstrates
 
@@ -63,14 +62,15 @@ python3 -m venv .venv
 .venv/bin/streamlit run streamlit_app.py
 ```
 
-The app includes:
+The app supports:
 
-- benchmark summaries;
-- the bundled 1CSP example, an uploaded structure, an RCSB/PDB identifier or a UniProt accession;
+- the bundled 1CSP example, PDB/mmCIF upload, an RCSB/PDB identifier or a UniProt accession;
+- automatic structure retrieval from RCSB and UniProt/AlphaFold fallback;
 - X→Cys predictions for a selected chain;
-- candidate ranking and component plots;
+- a ranked table with readable component names and short explanations;
+- an interactive 3D structure viewer highlighting the top candidates;
 - CSV, score-encoded PDB and PyMOL downloads;
-- methods and limitations.
+- benchmark, methods and limitations summaries.
 
 ## Command-line example
 
@@ -100,15 +100,26 @@ cysmutml compare-grouping-strategies \
 
 ## How the ranking is constructed
 
-The ML model provides a stability component for each possible X→Cys substitution. The target structure provides:
+The ML model supplies a stability term for each possible X→Cys substitution. The structure supplies four simple, interpretable signals:
 
-- relative SASA;
-- B-factor-derived flexibility;
-- local exposed-lysine context;
-- existing-cysteine context;
-- optional protected-site penalties.
+- **Relative exposure (SASA):** solvent accessibility of the residue, normalised within the chain.
+- **Flexibility:** chain-normalised B-factor, used as a proxy for local mobility.
+- **Nearby Lys boost:** rewards exposed lysines within the configured distance threshold.
+- **Existing Cys penalty:** reduces the score when nearby cysteines are already present.
+- **Protected-site penalty:** optional penalty for configured protected residues.
 
-These components are combined with transparent heuristic weights documented in [docs/RANKING_FORMULA.md](docs/RANKING_FORMULA.md). They are not calibrated probabilities.
+The final engineering score is:
+
+```text
+0.50 × ML stability
++ 0.20 × relative SASA
++ 0.15 × flexibility
++ 0.15 × nearby Lys boost
+− 0.10 × existing Cys penalty
+− 0.10 × protected-site penalty
+```
+
+Weights are configurable in `configs/default.yaml` and the implementation details are in [docs/RANKING_FORMULA.md](docs/RANKING_FORMULA.md). Scores are intended for ranking candidates, not as calibrated probabilities.
 
 ## Reproducibility
 
