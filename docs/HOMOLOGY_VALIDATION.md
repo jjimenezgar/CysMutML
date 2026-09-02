@@ -64,10 +64,13 @@ sequence.
 cysmutml compare-grouping-strategies \
   --features data/processed/fireprotdb_aggregated_features.csv \
   --clusters data/processed/sequence_clusters.csv \
-  --results-dir results/homology_validation
+  --results-dir results/homology_validation \
+  --models dummy_mean,ridge,random_forest,hist_gradient_boosting \
+  --target-proteins 150 \
+  --random-seed 42
 ```
 
-This runs identical physicochemical models under two CV strategies:
+This selects whole sequence clusters with a deterministic seed until at least 150 proteins are included, then runs the same four physicochemical models with three folds under two CV strategies:
 
 | Strategy | Test-set isolation |
 |---|---|
@@ -81,13 +84,17 @@ results/homology_validation/protein_grouped/
 results/homology_validation/homology_clustered/
 results/homology_validation/split_comparison_fold_metrics.csv
 results/homology_validation/split_comparison_summary.csv
+results/homology_validation/split_comparison_cys_metrics.csv
+results/homology_validation/split_comparison_cys_summary.csv
+results/homology_validation/mvp_protein_manifest.csv
+results/homology_validation/tree_permutation_importance.csv
 results/homology_validation/cluster_audit.json
+results/homology_validation/figures/*.png
 ```
 
-Proteins without a cluster are excluded explicitly. Both strategies are then run
-on exactly the same mapped rows, and `cluster_audit.json` records source, included,
-and excluded counts. Grouping columns are excluded from model features. The
-comparison therefore changes only the split, not the dataset or model inputs.
+Proteins without a cluster are excluded explicitly. Sampling never cuts a homology cluster: every protein from a selected cluster is included, so the realized total can slightly exceed 150. Both strategies then use exactly the same rows and precomputed fold manifest. `cluster_audit.json` records source, mapped, included, and excluded counts plus the sampling parameters. Grouping columns are excluded from model features. The comparison therefore changes only the split, not the dataset or model inputs.
+
+Runtime is recorded separately for fitting and prediction. Ridge coefficients provide global linear interpretability. Random Forest and HistGradientBoosting receive held-out permutation importance on the first homology fold; this avoids presenting impurity importance as if it were model-agnostic.
 
 ## Interpretation
 
@@ -114,10 +121,10 @@ Automated tests verify that:
 - each protein maps to exactly one cluster;
 - incomplete and conflicting mappings fail loudly;
 - a sequence cluster appears in exactly one test fold;
-- cluster identifiers and representative identifiers never enter the ML feature matrix.
+- cluster identifiers and representative identifiers never enter the ML feature matrix;
+- reduced sampling is deterministic and preserves complete clusters;
+- evaluation records fit and prediction runtime.
 
 ## Current status
 
-The infrastructure and leakage guards are implemented and CI-tested. Numerical
-homology-split metrics are intentionally not claimed in the repository until the
-local FireProtDB feature table is regenerated and the MMseqs2 experiment is run.
+The infrastructure, leakage guards, figure generation, and Streamlit integration are implemented. The benchmark workflow is manual-only because it downloads and processes FireProtDB; selected compact results are versioned after a successful run.
