@@ -1,204 +1,36 @@
-# CysMutML Ranking Formula
+# CysMutML ranking score
 
-The final engineering ranking is a deterministic heuristic. It is not learned from immobilization data and is not a calibrated probability.
+The ranking is a deterministic heuristic built on top of the deployed ML prediction. It is not trained on immobilization outcomes and it is not a probability.
 
-## Predicted DDG
+## Inputs
 
-The ML model predicts:
+For each possible X→Cys substitution, the pipeline computes:
 
-```text
-predicted_destabilization_ddg
-```
+- **ML stability score**: the predicted destabilization DDG mapped to [0, 1]. Higher means a more favourable stability estimate.
+- **Relative exposure**: relative SASA of the mutated residue in the input structure, clipped to [0, 1].
+- **Flexibility**: a min–max scaling of the chain-normalized mean B-factor. Higher values identify locally more flexible positions.
+- **Nearby Lys boost**: a saturating function of exposed lysines within 20 Å. It represents a simple proxy for a possible multipoint attachment environment.
+- **Nearby Cys penalty**: a penalty for proximity to existing cysteines. It is an engineering caution, not a prediction of disulfide formation.
+- **Protected-site penalty**: an optional penalty for user-supplied protected residues within 8 Å.
 
-Convention:
+## Final score
 
-```text
-larger positive values = greater predicted destabilization
-```
-
-## DDG to Stability Component
-
-Default references from `configs/default.yaml`:
+The default weights are stored in `configs/default.yaml`:
 
 ```text
-favorable_ddg = -1.0
-unfavorable_ddg = 2.0
+final_priority =
+    0.50 * ML stability
+  + 0.20 * relative exposure
+  + 0.15 * flexibility
+  + 0.15 * nearby Lys boost
+  - 0.10 * nearby Cys penalty
+  - 0.10 * protected-site penalty
 ```
 
-Formula:
+The score is used only to order candidates. A higher value means that the candidate is more attractive under these explicit assumptions.
 
-```text
-stability_component =
-  clip(1 - (predicted_destabilization_ddg - favorable_ddg)
-           / (unfavorable_ddg - favorable_ddg), 0, 1)
-```
+## Interpretation
 
-Interpretation:
+The model contribution comes from FireProtDB. SASA and B-factor are calculated from the target structure. The lysine boost and cysteine penalty are simple structural heuristics. None of these terms proves that a mutation will improve immobilization, activity, reactivity or experimental yield.
 
-- `1.0` means favorable by this heuristic transform.
-- `0.0` means unfavorable by this heuristic transform.
-- Values are clipped to `[0, 1]`.
-- This is not a probability of success.
-
-Worked examples:
-
-| Predicted DDG | Calculation | Stability component |
-|---:|---|---:|
-| -1.0 | `1 - (-1 - -1) / 3` | 1.000 |
-| 0.5 | `1 - (0.5 - -1) / 3` | 0.500 |
-| 2.0 | `1 - (2 - -1) / 3` | 0.000 |
-| 3.0 | clipped below 0 | 0.000 |
-
-## SASA and Accessibility
-
-SASA is calculated with Biopython Shrake-Rupley on the input structure.
-
-Relative SASA:
-
-```text
-relative_sasa = absolute_residue_sasa / max_asa_for_residue_type
-```
-
-The maximum ASA reference table is Tien et al. 2013, stored in `cysmutml.amino_acids`.
-
-Accessibility component:
-
-```text
-accessibility_component = clip(relative_sasa, 0, 1)
-```
-
-High relative SASA means the residue is more solvent exposed in the static input structure. It does not guarantee cysteine chemistry or immobilization success.
-
-## B-Factor-Derived Flexibility Proxy
-
-The current rigidification heuristic uses the chain-normalized residue B-factor:
-
-```text
-normalized_b_factor = (residue_mean_b_factor - chain_mean_b_factor) / chain_b_factor_std
-```
-
-For rigidification, higher local flexibility is treated as potentially more improvable by multipoint attachment:
-
-```text
-flexibility_component = minmax_high_good(normalized_b_factor)
-```
-
-If fewer than two valid values are available, the fallback is neutral:
-
-```text
-flexibility_component = 0.5
-```
-
-B-factors are not pure dynamics measurements. They depend on crystallographic refinement, disorder, occupancy, resolution, and model quality.
-
-The legacy `rigidity_component` column is preserved for backward compatibility, but it is not the main rigidification term.
-
-## Local Exposed Lys Environment
-
-The rigidification heuristic includes the number of exposed Lys residues near the candidate Cys.
-
-Defaults:
-
-```text
-radius = 20 Angstrom
-exposed Lys threshold = relative_sasa >= 0.25
-saturation_k = 3.0
-```
-
-Formula:
-
-```text
-lysine_environment_component =
-  local_exposed_lys_count / (local_exposed_lys_count + saturation_k)
-```
-
-This is a saturating boost, not a fitted probability. It reflects that glyoxyl-style multipoint attachment often benefits from nearby accessible amino groups, but the exact chemistry remains system-specific.
-
-## Protected-Site Penalty
-
-Protected residues are optional user-supplied residues such as:
-
-```text
-A:45,A:48,B:120
-```
-
-Distances use C-alpha coordinates. Protected residues can be on any chain in the input structure.
-
-Default radius:
-
-```text
-protected_site_radius_angstrom = 8.0
-```
-
-Formula:
-
-```text
-protected_site_penalty =
-  clip((radius - distance_to_nearest_protected) / radius, 0, 1)
-```
-
-If no protected residues are supplied, the penalty is `0.0`.
-
-## Existing-Cys Warning and Penalty
-
-Distances to existing cysteines use C-alpha coordinates across all chains in the input structure.
-
-Default warning radius:
-
-```text
-existing_cys_warning_radius_angstrom = 10.0
-```
-
-Default penalty radius:
-
-```text
-existing_cys_penalty_radius_angstrom = 6.0
-```
-
-Formula:
-
-```text
-existing_cys_penalty =
-  clip((radius - distance_to_existing_cys) / radius, 0, 1)
-```
-
-Proximity to an existing cysteine is an engineering caution. It does not imply disulfide formation.
-
-## Final Score
-
-The current ranking separates two intermediate scores.
-
-### Cys Site Suitability
-
-```text
-cys_site_suitability =
-  0.60 * stability_component
-+ 0.35 * accessibility_component
-- 0.10 * existing_cys_penalty
-- 0.15 * protected_site_penalty
-```
-
-This score asks whether the site is a reasonable Cys mutation candidate.
-
-### Rigidification Potential
-
-```text
-rigidification_potential =
-  0.35 * flexibility_component
-+ 0.40 * lysine_environment_component
-+ 0.25 * accessibility_component
-- 0.05 * existing_cys_penalty
-- 0.10 * protected_site_penalty
-```
-
-This score asks whether the local structural environment may be practically useful for rigidifying immobilization chemistry.
-
-### Final Engineering Score
-
-```text
-final_engineering_score =
-  0.60 * cys_site_suitability
-+ 0.40 * rigidification_potential
-```
-
-`cys_suitability_score` remains as an alias for `final_engineering_score` for backward compatibility. All component columns are preserved in `residue_ranking.csv`, so every score can be reconstructed.
+The CSV export retains the component columns so the final score can be reconstructed. The Streamlit app shows the main terms using user-facing labels and keeps implementation fields out of the default table.
