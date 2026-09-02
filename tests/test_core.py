@@ -7,7 +7,10 @@ from sklearn.model_selection import GroupKFold
 
 from cysmutml.amino_acids import physicochemical_features
 from cysmutml.data.audit import audit_duplicates_and_aggregate
-from cysmutml.data.fireprotdb import normalize_fireprotdb_table
+from cysmutml.data.fireprotdb import (
+    download_fireprotdb_sequences,
+    normalize_fireprotdb_table,
+)
 from cysmutml.evaluation.homology import (
     attach_sequence_clusters,
     grouped_fold_assignments,
@@ -67,10 +70,38 @@ def test_property_delta_direction():
 
 
 def test_sign_convention_normalization():
-    raw = pd.DataFrame({"protein": ["p"], "mutation": ["A1C"], "ddg": [1.5]})
+    raw = pd.DataFrame(
+        {
+            "protein": ["p"],
+            "source_sequence_id": [17],
+            "mutation": ["A1C"],
+            "ddg": [1.5],
+        }
+    )
     out, summary = normalize_fireprotdb_table(raw)
     assert summary["raw_records"] == 1
     assert out.loc[0, "destabilization_ddg_kcal_mol"] == 1.5
+    assert out.loc[0, "fireprotdb_sequence_id"] == "17"
+
+
+def test_fireprotdb_sequence_download(monkeypatch):
+    class Response:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_):
+            return None
+
+        def read(self):
+            return b'"ACDEFG"'
+
+    monkeypatch.setattr(
+        "cysmutml.data.fireprotdb.urlopen",
+        lambda *_args, **_kwargs: Response(),
+    )
+    sequences, failed = download_fireprotdb_sequences(["17"])
+    assert sequences == {"17": "ACDEFG"}
+    assert failed == []
 
 
 def test_structure_features():
