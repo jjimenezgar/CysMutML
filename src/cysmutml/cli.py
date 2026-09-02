@@ -14,6 +14,10 @@ from cysmutml.data.audit import (
 from cysmutml.data.fireprotdb import download_fireprotdb_csv, prepare_data
 from cysmutml.evaluation.ablation import run_ablation
 from cysmutml.evaluation.error_analysis import write_error_analysis
+from cysmutml.evaluation.homology import (
+    build_mmseqs_cluster_map,
+    compare_grouping_strategies,
+)
 from cysmutml.evaluation.structural_ablation import run_structural_ablation
 from cysmutml.features.build import build_feature_table
 from cysmutml.models.inference import predict_cys_mutations
@@ -82,6 +86,20 @@ def main(argv: list[str] | None = None) -> int:
     p = sub.add_parser("compare-physchem")
     p.add_argument("--features", default="data/processed/fireprotdb_aggregated_features.csv")
     p.add_argument("--results-dir", default="results/physchem_model_comparison")
+    p.add_argument("--models", default="dummy_mean,ridge,hist_gradient_boosting")
+
+    p = sub.add_parser("build-homology-clusters")
+    p.add_argument("--input", default="data/processed/fireprotdb_mutations_aggregated.csv")
+    p.add_argument("--output", default="data/processed/sequence_clusters.csv")
+    p.add_argument("--min-sequence-identity", type=float, default=0.30)
+    p.add_argument("--coverage", type=float, default=0.80)
+    p.add_argument("--mmseqs-binary", default="mmseqs")
+    p.add_argument("--work-dir", default=None)
+
+    p = sub.add_parser("compare-grouping-strategies")
+    p.add_argument("--features", default="data/processed/fireprotdb_aggregated_features.csv")
+    p.add_argument("--clusters", default="data/processed/sequence_clusters.csv")
+    p.add_argument("--results-dir", default="results/homology_validation")
     p.add_argument("--models", default="dummy_mean,ridge,hist_gradient_boosting")
 
     p = sub.add_parser("ablation")
@@ -197,6 +215,34 @@ def main(argv: list[str] | None = None) -> int:
         print(metrics.groupby("model")["mae"].mean().sort_values())
         print("Cys-only MAE by model:")
         print(cys.groupby("model")["mae"].mean().sort_values())
+    elif args.command == "build-homology-clusters":
+        mapping = build_mmseqs_cluster_map(
+            args.input,
+            args.output,
+            min_sequence_identity=args.min_sequence_identity,
+            coverage=args.coverage,
+            mmseqs_binary=args.mmseqs_binary,
+            work_dir=args.work_dir,
+        )
+        print(
+            json.dumps(
+                {
+                    "proteins": int(mapping["protein_id"].nunique()),
+                    "sequence_clusters": int(mapping["sequence_cluster"].nunique()),
+                    "output": args.output,
+                },
+                indent=2,
+            )
+        )
+    elif args.command == "compare-grouping-strategies":
+        model_names = [name.strip() for name in args.models.split(",") if name.strip()]
+        summary = compare_grouping_strategies(
+            args.features,
+            args.clusters,
+            args.results_dir,
+            model_names=model_names,
+        )
+        print(summary.to_string(index=False))
     elif args.command == "ablation":
         print(run_ablation(args.features, args.results_dir))
     elif args.command == "error-analysis":
