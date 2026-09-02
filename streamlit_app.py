@@ -9,6 +9,6 @@ PACKAGE_ROOT = Path(__file__).resolve().parent / "src"
 if str(PACKAGE_ROOT) not in sys.path:
     sys.path.insert(0, str(PACKAGE_ROOT))
 
-from cysmutml.webapp import main
+from cysmutml.webapp import main  # noqa: E402
 
 main()
