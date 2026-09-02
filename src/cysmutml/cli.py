@@ -100,7 +100,12 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--features", default="data/processed/fireprotdb_aggregated_features.csv")
     p.add_argument("--clusters", default="data/processed/sequence_clusters.csv")
     p.add_argument("--results-dir", default="results/homology_validation")
-    p.add_argument("--models", default="dummy_mean,ridge,hist_gradient_boosting")
+    p.add_argument(
+        "--models",
+        default="dummy_mean,ridge,random_forest,hist_gradient_boosting",
+    )
+    p.add_argument("--target-proteins", type=int, default=150)
+    p.add_argument("--random-seed", type=int, default=42)
 
     p = sub.add_parser("ablation")
     p.add_argument("--features", default="data/processed/features.csv")
@@ -241,6 +246,8 @@ def main(argv: list[str] | None = None) -> int:
             args.clusters,
             args.results_dir,
             model_names=model_names,
+            target_proteins=args.target_proteins,
+            random_seed=args.random_seed,
         )
         print(summary.to_string(index=False))
     elif args.command == "ablation":
