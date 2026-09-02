@@ -14,15 +14,13 @@ feature_sets:
 ranking:
   # Weights for the single transparent engineering score.
   score_weights:
-    stability: 0.50
-    sasa: 0.20
-    flexibility: 0.15
-    lysine_boost: 0.15
+    stability: 0.30
+    sasa: 0.25
+    flexibility: 0.25
+    lysine_boost: 0.10
     existing_cys_penalty: 0.10
-    protected_penalty: 0.10
   stability_reference_ddg_low: -1.0
   stability_reference_ddg_high: 2.0
-  protected_site_radius_angstrom: 8.0
 lysine_environment:
   radius_angstrom: 20.0
   exposure_relative_sasa_threshold: 0.25
