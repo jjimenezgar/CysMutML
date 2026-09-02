@@ -122,6 +122,39 @@ Automated tests verify that:
 - reduced sampling is deterministic and preserves complete clusters;
 - evaluation records fit and prediction runtime.
 
+## Executed MVP result
+
+The reproducible run used the FireProtDB export on 2 September 2026. UniProt enrichment
+returned 194 canonical sequences with one retrieval failure. MMseqs2 mapped 171 of
+543 source protein names into 157 clusters; the deterministic cluster-complete sample
+contained 150 proteins and 5,634 mutation rows. A further 372 source protein names had
+no usable sequence and were excluded before sampling.
+
+Mean MAE across three folds (kcal/mol):
+
+| Split | Dummy | Ridge | Random Forest | HistGradientBoosting |
+|---|---:|---:|---:|---:|
+| Protein grouped | 1.493 | 1.508 | 1.538 | 1.529 |
+| Homology clustered | 1.499 | 1.523 | 1.544 | 1.534 |
+
+For X→Cys rows only:
+
+| Split | Dummy | Ridge | Random Forest | HistGradientBoosting |
+|---|---:|---:|---:|---:|
+| Protein grouped | 1.467 | 1.535 | 1.830 | 1.795 |
+| Homology clustered | 1.536 | 1.630 | 1.806 | 1.777 |
+
+The stricter split increases Ridge MAE by 0.015 overall and 0.095 on X→Cys.
+These estimates are intentionally modest: the reduced sample is useful for demonstrating
+validation design, not for claiming state-of-the-art prediction. Fit time per fold was
+approximately 0.019 s for Ridge, 0.866 s for Random Forest, and 0.424 s for
+HistGradientBoosting on the GitHub runner.
+
+Held-out permutation importance is model-specific and was computed on 1,878 rows of
+homology fold 1. The strongest positive signals were wt_hydrophobicity for Random
+Forest (MAE increase 0.045) and wt_volume for HistGradientBoosting (0.021). Small or
+negative values should be read as uncertainty, not as evidence that a feature is harmful.
+
 ## Current status
 
-The infrastructure, leakage guards, figure generation, and Streamlit integration are implemented. The benchmark workflow is manual-only because it downloads and processes FireProtDB; selected compact results are versioned after a successful run.
+The infrastructure, leakage guards, figure generation, and Streamlit integration are implemented. The benchmark workflow is manual-only because it downloads and processes FireProtDB. The compact CSV/JSON results from the executed MVP are versioned in results/homology_validation/.
