@@ -54,6 +54,8 @@ Mean MAE, lower is better. On the X→Cys subset, Ridge scored 1.535 with protei
 
 This is a small portfolio benchmark, not a state-of-the-art claim. The full fold metrics, timing measurements, sampling audit and permutation importance are in [docs/HOMOLOGY_VALIDATION.md](docs/HOMOLOGY_VALIDATION.md).
 
+**What the results say.** The learned models improve on the mean baseline, but the explained variance is modest. Gradient boosting is slightly better than Ridge in this benchmark; Ridge remains deployed for its simplicity and interpretability. The increase in error under homology clustering is an explicit warning about generalisation to related proteins.
+
 ## Streamlit app
 
 Run the app locally:
