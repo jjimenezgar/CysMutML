@@ -1,6 +1,5 @@
 # CysMutML
 
-[![CI](https://github.com/jjimenezgar/CysMutML/actions/workflows/ci.yml/badge.svg)](https://github.com/jjimenezgar/CysMutML/actions/workflows/ci.yml)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-3776AB.svg)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
@@ -14,6 +13,11 @@ It combines two separate signals:
 The model estimates mutation-associated destabilisation. The structural layer then ranks candidates using solvent exposure, a flexibility proxy and configurable local penalties. The final score is a prioritisation heuristic, not a probability of experimental success.
 
 ![CysMutML](docs/figures/cysmutml_github_cover.jpg)
+
+[![Tests](https://img.shields.io/badge/tests-24%20passed-2ea44f?style=for-the-badge&logo=pytest&logoColor=white)](https://github.com/jjimenezgar/CysMutML/actions)
+[![CI](https://img.shields.io/badge/CI-passing-2ea44f?style=for-the-badge&logo=githubactions&logoColor=white)](https://github.com/jjimenezgar/CysMutML/actions)
+[![Launch Streamlit](https://img.shields.io/badge/Launch%20Streamlit-2ea44f?style=for-the-badge&logo=streamlit&logoColor=white)](https://cysmutml.streamlit.app)
+
 
 ## What the project demonstrates
 
