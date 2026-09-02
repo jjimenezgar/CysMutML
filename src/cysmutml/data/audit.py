@@ -46,7 +46,7 @@ def audit_duplicates_and_aggregate(
         "max_destabilization_ddg": ("destabilization_ddg_kcal_mol", "max"),
         "pdb_id_values": ("pdb_id", "first"),
     }
-    for column in ("canonical_sequence", "uniprot_id"):
+    for column in ("canonical_sequence", "fireprotdb_sequence_id", "uniprot_id"):
         if column in df.columns:
             aggregation[column] = (column, "first")
     aggregate_df = grouped.agg(**aggregation).reset_index()
@@ -112,7 +112,9 @@ def audit_duplicates_and_aggregate(
         "pdb_id_values",
     ]
     ordered.extend(
-        column for column in ("canonical_sequence", "uniprot_id") if column in aggregate_df
+        column
+        for column in ("canonical_sequence", "fireprotdb_sequence_id", "uniprot_id")
+        if column in aggregate_df
     )
     aggregate_df[ordered].to_csv(aggregated_csv, index=False)
 
