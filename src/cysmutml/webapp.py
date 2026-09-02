@@ -307,6 +307,14 @@ def render_benchmark() -> None:
         st.dataframe(comparison, use_container_width=True, hide_index=True)
         st.info("The homology-clustered split is intentionally stricter and exposes residual relatedness between proteins.")
 
+        st.markdown("#### What the validation splits mean")
+        st.caption(
+            "**Protein grouped:** all mutations from one protein stay in the same fold, so the model "
+            "is tested on proteins it did not see during training. **Homology clustered:** proteins "
+            "with similar sequences are first grouped with MMseqs2 and the whole cluster stays in one "
+            "fold. This is a stricter test of performance on less-related protein families."
+        )
+
     st.markdown("#### How to read these metrics")
     st.caption(
         "MAE is the average absolute error in kcal/mol (lower is better). "
