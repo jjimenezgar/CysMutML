@@ -47,7 +47,7 @@ def render_overview() -> None:
     first.metric("Aggregated mutations", "352,005")
     second.metric("Protein groups", "542")
     third.metric("X→Cys records", "16,236")
-    fourth.metric("Automated tests", "22")
+    fourth.metric("Primary validation", "Group-aware")
 
     st.image(str(ROOT / "docs" / "figures" / "cysmutml_workflow.png"))
     st.info(
