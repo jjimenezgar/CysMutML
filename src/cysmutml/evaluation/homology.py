@@ -194,7 +194,7 @@ def build_mmseqs_cluster_map(
             f"Could not find {mmseqs_binary!r}. Install MMseqs2 or pass --mmseqs-binary."
         )
 
-    source = pd.read_csv(input_csv, low_memory=False)
+    source = pd.read_csv(input_csv, low_memory=False, keep_default_na=False)
     proteins = unique_protein_sequences(source)
     proteins["mmseqs_id"] = [f"seq_{index:06d}" for index in range(len(proteins))]
     token_to_protein = dict(zip(proteins["mmseqs_id"], proteins["protein_id"], strict=True))
@@ -386,7 +386,7 @@ def compare_grouping_strategies(
     from cysmutml.models.train import evaluate_models
 
     features = pd.read_csv(feature_csv, low_memory=False)
-    mapping = pd.read_csv(cluster_mapping_csv)
+    mapping = pd.read_csv(cluster_mapping_csv, keep_default_na=False)
     source_proteins = set(features["protein_id"].astype(str))
     mapped_proteins = set(validate_cluster_mapping(mapping)["protein_id"])
     attached = attach_sequence_clusters(features, mapping, require_complete=False)
