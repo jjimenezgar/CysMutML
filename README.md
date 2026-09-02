@@ -4,147 +4,71 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-3776AB.svg)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-**CysMutML is a lightweight hybrid ML and structural-bioinformatics pipeline for prioritizing candidate cysteine substitutions in proteins.** It learns mutation-associated destabilization from FireProtDB using interpretable physicochemical features, then combines that prediction with target-PDB SASA, B-factor-derived flexibility, local exposed Lys context, protected-site, and existing-cysteine heuristics to produce a transparent Cys candidate ranking.
+CysMutML is a small, interpretable pipeline for prioritising cysteine substitutions in proteins.
+
+It combines two separate signals:
+
+1. a physicochemical ML model trained on FireProtDB mutation data;
+2. structural information from a target PDB structure.
+
+The model estimates mutation-associated destabilisation. The structural layer then ranks candidates using solvent exposure, a flexibility proxy and configurable local penalties. The final score is a prioritisation heuristic, not a probability of experimental success.
 
 ![CysMutML workflow](docs/figures/cysmutml_workflow.png)
 
-## Why This Project?
+## What the project demonstrates
 
-Cysteine substitutions are useful in protein engineering, labeling, immobilization, and conjugation, but a practical candidate should be both mutation-tolerant and structurally accessible. CysMutML demonstrates an end-to-end workflow for experimental data curation, leakage-safe ML validation, interpretable regression, structural bioinformatics, and transparent engineering prioritization.
+- Data cleaning and aggregation for a heterogeneous protein dataset.
+- Protein-aware and homology-aware cross-validation.
+- Interpretable regression with a reproducible benchmark.
+- Leakage checks and explicit feature contracts.
+- End-to-end inference on a PDB structure.
+- A lightweight Streamlit interface and downloadable analysis files.
 
+## Current model
 
-## Portfolio Review Path
+The deployed model is a Ridge regressor using amino-acid physicochemical descriptors, mutation deltas and BLOSUM62 features.
 
-For a concise technical review, follow these artifacts in order:
-
-1. [Streamlit app](streamlit_app.py): interactive benchmark review and end-to-end X→Cys prediction on a PDB structure.
-2. [Portfolio notebook](notebooks/CysMutML_Portfolio_Demo.ipynb): grouped validation, task-specific metrics, interpretability, and a real PDB case.
-3. [Model card](MODEL_CARD.md): intended use, evaluation design, limitations, and responsible interpretation.
-4. [Model comparison](results/physchem_model_comparison/): fold-level Ridge, HGB, and Dummy results.
-5. [Homology validation](docs/HOMOLOGY_VALIDATION.md): four-model MVP benchmark with cluster-aware splitting.
-6. [Retrospective validation](validation/godoy2011/VALIDATION_REPORT.md): an honest audit against 13 published mutants.
-7. [Core tests](tests/test_core.py): data, leakage, serialization, structural features, inference, and score reconstruction.
-
-The CI workflow runs linting, tests, package build, and notebook execution from a clean checkout.
-
-## Architecture
-
-```text
-FireProtDB
-   |
-   v
-Physicochemical ML
-   |
-   v
-Predicted destabilization
-                         \
-                          -> Cys ranking
-                         /
-Target PDB -> SASA + B-factor-derived rigidity + optional penalties
-```
-
-The ML model and the structural heuristic are intentionally separate.
-
-## Key Capabilities
-
-- Download and preprocess FireProtDB mutation-stability data.
-- Aggregate repeated protein/mutation measurements by median DDG.
-- Train/evaluate physicochemical models with protein-grouped cross-validation.
-- Audit residual homology leakage with optional MMseqs2 sequence-clustered validation.
-- Predict `predicted_destabilization_ddg` for every X->Cys mutation in a PDB chain.
-- Rank candidates using transparent, configurable `cys_site_suitability`, `rigidification_potential`, and `final_engineering_score` formulas.
-- Export ML predictions, ranking CSVs, a score-encoded PDB, and a PyMOL script.
-
-## Model
-
-Deployed v1.0 model:
-
-```text
-Ridge regression
-```
-
-Training dataset:
-
-```text
-FireProtDB v2.0 mutation-level median-aggregated dataset
-352,005 rows
-542 unique proteins
-16,236 aggregated X->Cys rows
-```
-
-Target:
+It was trained on 352,005 median-aggregated FireProtDB rows from 542 proteins. The target is:
 
 ```text
 destabilization_ddg_kcal_mol
-larger positive values = greater destabilization
 ```
 
-ML features:
+Larger positive values indicate greater predicted destabilisation. Structural descriptors are not used by this model.
 
-```text
-WT properties + mutant properties + mutant-minus-WT deltas + BLOSUM62
-```
+## Homology-aware MVP
 
-Structural descriptors are not used in the deployed ML model. They are applied only to the target PDB in the ranking stage.
-
-## Actual Performance
-
-Validation uses 3-fold `GroupKFold` by `protein_id`. A random mutation-level split is not used as the primary evaluation.
-
-Overall grouped-CV metrics:
-
-| Model | MAE | RMSE | R2 | Pearson | Spearman |
-|---|---:|---:|---:|---:|---:|
-| Dummy mean | 0.800 | 1.049 | -0.002 | undefined | undefined |
-| Ridge | 0.684 | 0.930 | 0.213 | 0.462 | 0.450 |
-| HistGradientBoosting | 0.669 | 0.917 | 0.234 | 0.485 | 0.475 |
-
-X->Cys subset:
-
-| Model | MAE | RMSE | R2 | Pearson | Spearman |
-|---|---:|---:|---:|---:|---:|
-| Dummy mean | 0.739 | 0.923 | -0.172 | undefined | undefined |
-| Ridge | 0.587 | 0.803 | 0.115 | 0.348 | 0.345 |
-| HistGradientBoosting | 0.579 | 0.795 | 0.131 | 0.364 | 0.362 |
-
-HGB is slightly better, but Ridge remains deployed because it is close in performance, simpler, faster, and easier to interpret.
-
-### Reduced homology-aware MVP
-
-The reproducible 30% identity / 80% coverage run selected complete clusters with seed
-42: 150 proteins, 5,634 mutation rows, 171 mapped proteins, and 157 sequence clusters.
-Mean three-fold MAE was:
+A reduced benchmark was run on 150 proteins and 5,634 mutation rows. Sequences were clustered with MMseqs2 at 30% identity and 80% coverage. The experiment used seed 42, complete sequence clusters and three folds.
 
 | Split | Dummy | Ridge | Random Forest | HistGradientBoosting |
 |---|---:|---:|---:|---:|
 | Protein grouped | 1.493 | 1.508 | 1.538 | 1.529 |
 | Homology clustered | 1.499 | 1.523 | 1.544 | 1.534 |
 
-On X→Cys rows, Ridge was 1.535 vs 1.630 MAE (protein vs homology split). The
-stricter estimate is intentionally presented as an MVP validation demonstration, not
-as a state-of-the-art claim. Full fold metrics, timing, sampling audit, and permutation
-importance are in [docs/HOMOLOGY_VALIDATION.md](docs/HOMOLOGY_VALIDATION.md).
+Mean MAE, lower is better. On the X→Cys subset, Ridge scored 1.535 with protein grouping and 1.630 with homology clustering.
 
+This is a small portfolio benchmark, not a state-of-the-art claim. The full fold metrics, timing measurements, sampling audit and permutation importance are in [docs/HOMOLOGY_VALIDATION.md](docs/HOMOLOGY_VALIDATION.md).
 
-## Quick Start
+## Streamlit app
 
-Install:
+Run the app locally:
 
 ```bash
 python3 -m venv .venv
-.venv/bin/pip install -e '.[dev]'
-```
-
-Launch the portfolio app:
-
-```bash
 .venv/bin/pip install -e '.[app]'
 .venv/bin/streamlit run streamlit_app.py
 ```
 
-The app separates benchmark evidence from the structural ranking heuristic and can run the bundled `1CSP` example or a user-uploaded PDB.
+The app includes:
 
-Run the same real example from the CLI:
+- benchmark summaries;
+- the bundled 1CSP example or an uploaded PDB;
+- X→Cys predictions for a selected chain;
+- candidate ranking and component plots;
+- CSV, score-encoded PDB and PyMOL downloads;
+- methods and limitations.
+
+## Command-line example
 
 ```bash
 cysmutml predict \
@@ -153,23 +77,7 @@ cysmutml predict \
   --output examples/real_case
 ```
 
-Reproduce data preparation:
-
-```bash
-cysmutml prepare-data --download-fireprotdb \
-  --raw data/raw/fireprotdb.csv \
-  --output data/processed/fireprotdb_mutations.csv
-
-cysmutml audit-data \
-  --processed data/processed/fireprotdb_mutations.csv \
-  --raw data/raw/fireprotdb.csv
-
-cysmutml build-features \
-  --input data/processed/fireprotdb_mutations_aggregated.csv \
-  --output data/processed/fireprotdb_aggregated_features.csv
-```
-
-Run the reduced homology-aware MVP after installing MMseqs2:
+To reproduce the homology-aware benchmark, install MMseqs2 and run:
 
 ```bash
 cysmutml build-homology-clusters \
@@ -186,133 +94,42 @@ cysmutml compare-grouping-strategies \
   --random-seed 42
 ```
 
-## Outputs
+## How the ranking is constructed
 
-`mutation_predictions.csv` contains the ML output:
-
-- mutation identity;
-- physicochemical features;
-- predicted destabilization;
-- `stability_component`.
-
-`residue_ranking.csv` contains the engineering heuristic:
+The ML model provides a stability component for each possible X→Cys substitution. The target structure provides:
 
 - relative SASA;
-- accessibility component;
-- B-factor-derived flexibility component;
-- local exposed Lys component;
-- optional penalties;
-- `cys_site_suitability`;
-- `rigidification_potential`;
-- final `final_engineering_score`.
+- B-factor-derived flexibility;
+- local exposed-lysine context;
+- existing-cysteine context;
+- optional protected-site penalties.
 
-## Ranking Formula
-
-Default formula:
-
-```text
-cys_site_suitability =
-  0.60 * stability_component
-+ 0.35 * accessibility_component
-- 0.10 * existing_cys_penalty
-- 0.15 * protected_site_penalty
-
-rigidification_potential =
-  0.35 * flexibility_component
-+ 0.40 * lysine_environment_component
-+ 0.25 * accessibility_component
-- 0.05 * existing_cys_penalty
-- 0.10 * protected_site_penalty
-
-final_engineering_score =
-  0.60 * cys_site_suitability
-+ 0.40 * rigidification_potential
-```
-
-These are heuristic defaults, not experimentally optimized weights. Details are in `docs/RANKING_FORMULA.md`.
-
-## Retrospective Validation: Godoy et al. 2011
-
-CysMutML includes a small retrospective audit against the supplied Godoy et al. PGA/BTL2 cysteine-immobilization case study.
-
-Files:
-
-- `validation/godoy2011/VALIDATION_REPORT.md`
-- `validation/godoy2011/full_validation_matrix.csv`
-- `validation/godoy2011/validation_metrics_summary.csv`
-
-Key result: the upgraded heuristic is more interpretable and partially enriches experimental sites in the upper 20-30% of candidates, but it is not calibrated enough to claim prediction of immobilization success. Combined rigidification potential had moderate association with stabilization factors across the 13 mutants, while per-enzyme correlations were weak or inconsistent.
-
-## Real Example
-
-The v1.0 case study uses PDB `1CSP` chain A and generated 67 X->Cys candidates.
-
-Top 5:
-
-| Rank | Mutation | Pred DDG | Stability | Rel SASA | Rigidity | Score |
-|---:|---|---:|---:|---:|---:|---:|
-| 1 | F38C | -1.040 | 1.000 | 0.562 | 0.832 | 0.835 |
-| 2 | F27C | -1.040 | 1.000 | 0.166 | 0.985 | 0.747 |
-| 3 | R56C | -0.201 | 0.734 | 0.758 | 0.712 | 0.737 |
-| 4 | F30C | -1.040 | 1.000 | 0.242 | 0.815 | 0.735 |
-| 5 | W8C | -1.169 | 1.000 | 0.342 | 0.585 | 0.720 |
-
-See `examples/real_case/`.
-
-## ML vs Heuristic
-
-Learned from data:
-
-- mutation-associated destabilization.
-
-Calculated from structure:
-
-- SASA;
-- B-factor-derived flexibility proxy;
-- local exposed Lys context;
-- protected-site distance;
-- existing-cysteine proximity.
-
-Heuristic:
-
-- normalization;
-- penalties;
-- final Cys suitability score.
-
-CysMutML does not predict immobilization yield, activity retention, disulfide formation, or calibrated probability of success.
+These components are combined with transparent heuristic weights documented in [docs/RANKING_FORMULA.md](docs/RANKING_FORMULA.md). They are not calibrated probabilities.
 
 ## Reproducibility
 
 ```bash
+.venv/bin/pip install -e '.[dev]'
 .venv/bin/pytest -q
 .venv/bin/ruff check .
 ```
 
-GitHub Actions verifies Ruff, the Python 3.10/3.12 test matrix, package build, notebook execution, and a Streamlit health check from a clean checkout.
+GitHub Actions also runs the Python 3.10/3.12 test matrix, package build, portfolio notebook and Streamlit health check.
 
-## Documentation
+## Repository guide
 
-- [`MODEL_CARD.md`](MODEL_CARD.md)
-- [`notebooks/CysMutML_Portfolio_Demo.ipynb`](notebooks/CysMutML_Portfolio_Demo.ipynb)
-- `docs/FEATURE_SCHEMA.md`
-- `docs/RANKING_FORMULA.md`
-- `docs/ML_VS_HEURISTIC.md`
-- `docs/MODEL_STATUS_REPORT.md`
-- `docs/SCIENTIFIC_AUDIT.md`
-- `docs/INTERVIEW_GUIDE.md`
-- [`docs/HOMOLOGY_VALIDATION.md`](docs/HOMOLOGY_VALIDATION.md)
+- [Streamlit entry point](streamlit_app.py)
+- [Portfolio notebook](notebooks/CysMutML_Portfolio_Demo.ipynb)
+- [Model card](MODEL_CARD.md)
+- [Homology validation](docs/HOMOLOGY_VALIDATION.md)
+- [Feature schema](docs/FEATURE_SCHEMA.md)
+- [Ranking formula](docs/RANKING_FORMULA.md)
+- [Scientific audit](docs/SCIENTIFIC_AUDIT.md)
+- [Retrospective validation](validation/godoy2011/VALIDATION_REPORT.md)
+- [Versioned benchmark results](results/homology_validation/)
 
 ## Limitations
 
-- Stability is not immobilization success.
-- Stability is not activity.
-- B-factor is only a crystallographic rigidity proxy.
-- SASA does not guarantee cysteine chemistry.
-- Ranking weights are heuristic unless experimentally calibrated.
-- FireProtDB measurements are heterogeneous across proteins, methods, temperature, and pH.
-- Protein-grouped CV may still share homologous families across folds; v1.2 adds a stricter sequence-clustered comparison.
-- This is not a state-of-the-art DDG predictor.
+CysMutML does not predict immobilisation yield, retained activity, cysteine reactivity, disulfide formation or experimental success. FireProtDB measurements are heterogeneous, B-factors are only a rigidity proxy, and the ranking weights have not been experimentally calibrated.
 
-## Exploratory Work
-
-The repository preserves an underpowered exploratory structure-trained ML ablation (`results/structural_ablation/`). It used 114 mapped rows and 6 X->Cys observations, did not improve performance in that small subset, and is not part of the v1.0 production pipeline.
+The repository also contains an exploratory structure-trained ablation under `results/structural_ablation/`. It is retained for transparency but is not part of the deployed pipeline.
