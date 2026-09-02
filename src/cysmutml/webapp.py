@@ -307,6 +307,14 @@ def render_benchmark() -> None:
         st.dataframe(comparison, use_container_width=True, hide_index=True)
         st.info("The homology-clustered split is intentionally stricter and exposes residual relatedness between proteins.")
 
+    st.markdown("#### How to read these metrics")
+    st.caption(
+        "MAE is the average absolute error in kcal/mol (lower is better). "
+        "RMSE penalises larger errors more strongly. R² measures explained variance; "
+        "Pearson and Spearman describe linear and rank correlation. Fit time is the "
+        "average training time per fold."
+    )
+
 
 def _run_prediction(pdb_path: Path, chain: str) -> dict[str, object]:
     with tempfile.TemporaryDirectory(prefix="cysmutml_app_") as temporary:
@@ -410,6 +418,15 @@ def render_prediction() -> None:
     shown = ranking.nsmallest(count, "rank_engineering")
     st.metric("Candidates shown", f"{count} of {len(ranking)}")
     st.dataframe(_humanize_ranking(shown), use_container_width=True, hide_index=True)
+
+    st.markdown("#### What the columns mean")
+    st.caption(
+        "ML stability is the model prediction mapped to a 0–1 preference score. "
+        "Relative exposure is the residue's relative SASA. Flexibility comes from the "
+        "local B-factor signal. Nearby Lys boost rewards accessible lysines within the "
+        "configured radius. Nearby Cys penalty discourages candidates close to existing "
+        "cysteines. Final priority is the weighted sum of these signals, not a probability."
+    )
 
     chart_columns = [
         column
