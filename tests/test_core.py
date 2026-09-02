@@ -32,6 +32,19 @@ ROOT = Path(__file__).resolve().parents[1]
 PDB = ROOT / "examples" / "tiny_protein.pdb"
 
 
+def _write_synthetic_dataset(tmp_path: Path) -> Path:
+    """Create a small self-contained FireProtDB-like table for unit tests."""
+    path = tmp_path / "synthetic_fireprotdb_like.csv"
+    pd.DataFrame(
+        {
+            "protein": ["p1", "p1", "p1", "p2", "p2", "p2", "p3", "p3", "p3"],
+            "mutation": ["A1C", "K2C", "V3L", "F1C", "D2N", "L3C", "S1C", "R2A", "Y3C"],
+            "ddg": [0.2, 0.8, -0.3, 1.1, -0.2, 0.4, -0.5, 0.7, 0.1],
+        }
+    ).to_csv(path, index=False)
+    return path
+
+
 def test_mutation_parsing():
     mutation = parse_mutation("K12C")
     assert mutation.wt == "K"
@@ -69,7 +82,7 @@ def test_residue_mapping_and_wt_verification():
 
 
 def test_feature_schema_and_group_split(tmp_path):
-    input_csv = ROOT / "data" / "raw" / "synthetic_fireprotdb_like.csv"
+    input_csv = _write_synthetic_dataset(tmp_path)
     features_csv = tmp_path / "features.csv"
     df = build_feature_table(input_csv, features_csv)
     assert {"delta_volume", "blosum62", "wt_hydrophobicity"}.issubset(df.columns)
@@ -111,7 +124,7 @@ def test_deployed_model_feature_schema_if_present():
 
 def test_model_serialization(tmp_path):
     features_csv = tmp_path / "features.csv"
-    build_feature_table(ROOT / "data" / "raw" / "synthetic_fireprotdb_like.csv", features_csv)
+    build_feature_table(_write_synthetic_dataset(tmp_path), features_csv)
     model_path = tmp_path / "model.joblib"
     meta_path = tmp_path / "metadata.json"
     train_final_model(
@@ -124,7 +137,7 @@ def test_model_serialization(tmp_path):
 
 def test_inference_generation_and_ranking(tmp_path):
     features_csv = tmp_path / "features.csv"
-    build_feature_table(ROOT / "data" / "raw" / "synthetic_fireprotdb_like.csv", features_csv)
+    build_feature_table(_write_synthetic_dataset(tmp_path), features_csv)
     model_path = tmp_path / "model.joblib"
     train_final_model(
         features_csv,
