@@ -404,6 +404,7 @@ def test_sequence_group_metadata_never_becomes_a_model_feature():
             "protein_id": ["p1", "p2"],
             "sequence_cluster": ["c1", "c2"],
             "representative_protein_id": ["p1", "p2"],
+            "fireprotdb_sequence_id": [17, 18],
             "wt_aa": ["A", "K"],
             "mut_aa": ["C", "C"],
             "delta_mass": [1.0, 2.0],
@@ -415,15 +416,18 @@ def test_sequence_group_metadata_never_becomes_a_model_feature():
     assert categorical == ["wt_aa", "mut_aa"]
 
 
-def test_unique_sequences_rejects_conflicting_protein_records():
+def test_unique_sequences_resolve_variants_deterministically():
     table = pd.DataFrame(
         {
-            "protein_id": ["p1", "p1", "p2"],
-            "canonical_sequence": ["ACDE", "ACDF", "KLMN"],
+            "protein_id": ["p1", "p1", "p1", "p2"],
+            "canonical_sequence": ["ACDE", "ACDF", "ACDE", "KLMN"],
         }
     )
-    with pytest.raises(ValueError, match="2 canonical sequences"):
-        unique_protein_sequences(table)
+    selected = unique_protein_sequences(table)
+    p1 = selected[selected["protein_id"] == "p1"].iloc[0]
+    assert p1["canonical_sequence"] == "ACDE"
+    assert p1["sequence_variants"] == 2
+    assert p1["selected_sequence_records"] == 2
 
 
 
