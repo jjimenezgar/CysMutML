@@ -163,12 +163,16 @@ def rank_predictions(
     df["lysine_boost"] = df["lysine_environment_component"]
 
     ranking_weights = {
-        "stability": 0.50,
-        "sasa": 0.20,
-        "flexibility": 0.15,
-        "lysine_boost": 0.15,
-        "existing_cys_penalty": 0.10,
-        "protected_penalty": 0.10,
+        "stability": float(ranking_config.get("score_weights", {}).get("stability", 0.50)),
+        "sasa": float(ranking_config.get("score_weights", {}).get("sasa", 0.20)),
+        "flexibility": float(ranking_config.get("score_weights", {}).get("flexibility", 0.15)),
+        "lysine_boost": float(ranking_config.get("score_weights", {}).get("lysine_boost", 0.15)),
+        "existing_cys_penalty": float(
+            ranking_config.get("score_weights", {}).get("existing_cys_penalty", 0.10)
+        ),
+        "protected_penalty": float(
+            ranking_config.get("score_weights", {}).get("protected_penalty", 0.10)
+        ),
     }
     df["final_engineering_score"] = (
         ranking_weights["stability"] * df["stability_score"]
