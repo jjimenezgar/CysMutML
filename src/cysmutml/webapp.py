@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import re
 import tempfile
 from pathlib import Path
@@ -10,6 +11,7 @@ from urllib.request import Request, urlopen
 
 import pandas as pd
 import streamlit as st
+import streamlit.components.v1 as components
 from Bio.PDB import MMCIFParser, PDBParser
 
 from cysmutml.models.inference import predict_cys_mutations
@@ -147,6 +149,59 @@ def _humanize_ranking(ranking: pd.DataFrame) -> pd.DataFrame:
     return shown
 
 
+def render_protein_viewer(
+    structure_bytes: bytes,
+    structure_format: str,
+    chain: str,
+    ranking: pd.DataFrame,
+    top_n: int,
+) -> None:
+    """Render a lightweight 3Dmol.js view with the selected candidates highlighted."""
+    residue_numbers = []
+    for mutation in ranking.head(top_n)["mutation"].astype(str):
+        match = re.search(r"(\d+)", mutation)
+        if match:
+            residue_numbers.append(int(match.group(1)))
+    residue_numbers = sorted(set(residue_numbers))
+    if not residue_numbers:
+        st.info("No residue positions were available for the selected candidates.")
+        return
+
+    structure_text = structure_bytes.decode("utf-8", errors="replace")
+    model_literal = json.dumps(structure_text)
+    format_literal = json.dumps("cif" if structure_format in {"cif", "mmcif"} else "pdb")
+    chain_literal = json.dumps(chain)
+    residues_literal = json.dumps(residue_numbers)
+    components.html(
+        f"""
+        <div id="cysmutml-viewer" style="width:100%;height:540px;position:relative;"></div>
+        <script src="https://3dmol.csb.pitt.edu/build/3Dmol-min.js"></script>
+        <script>
+          const element = document.getElementById("cysmutml-viewer");
+          const viewer = $3Dmol.createViewer(element, {{
+            backgroundColor: "white",
+            antialias: true
+          }});
+          viewer.addModel({model_literal}, {format_literal});
+          viewer.setStyle({{}}, {{cartoon: {{color: "#cbd5e1"}}}});
+          viewer.setStyle(
+            {{chain: {chain_literal}, resi: {residues_literal}}},
+            {{cartoon: {{color: "#f59e0b"}}, stick: {{radius: 0.22, color: "#dc2626"}}}}
+          );
+          viewer.zoomTo({{chain: {chain_literal}}});
+          viewer.render();
+          window.addEventListener("resize", () => viewer.resize(), false);
+        </script>
+        """,
+        height=560,
+        scrolling=False,
+    )
+    st.caption(
+        f"Highlighted candidates: {', '.join(str(number) for number in residue_numbers)}. "
+        "Gold residues are the selected positions; red sticks show their local environment."
+    )
+
+
 def render_overview() -> None:
     if BRAND_IMAGE.exists():
         st.image(str(BRAND_IMAGE), use_container_width=True)
@@ -202,8 +257,11 @@ def render_benchmark() -> None:
             ]
             .mean()
             .round(3)
+            .reset_index()
             .rename(
                 columns={
+                    "split_strategy": "Validation split",
+                    "model": "Model",
                     "mae": "MAE",
                     "rmse": "RMSE",
                     "r2": "R²",
@@ -212,7 +270,21 @@ def render_benchmark() -> None:
                 }
             )
         )
-        st.dataframe(comparison, use_container_width=True)
+        comparison["Validation split"] = comparison["Validation split"].map(
+            {
+                "protein_grouped": "Protein grouped",
+                "homology_clustered": "Homology clustered",
+            }
+        )
+        comparison["Model"] = comparison["Model"].map(
+            {
+                "dummy_mean": "Baseline (mean)",
+                "ridge": "Ridge",
+                "random_forest": "Random forest",
+                "hist_gradient_boosting": "Gradient boosting",
+            }
+        )
+        st.dataframe(comparison, use_container_width=True, hide_index=True)
         st.info("The homology-clustered split is intentionally stricter and exposes residual relatedness between proteins.")
 
 
@@ -242,6 +314,8 @@ def _run_prediction(pdb_path: Path, chain: str) -> dict[str, object]:
             "ranked_pdb": ranked_pdb.read_bytes(),
             "pymol": pymol.read_bytes(),
             "warnings": warnings,
+            "structure_bytes": pdb_path.read_bytes(),
+            "structure_format": pdb_path.suffix.lower().lstrip("."),
         }
 
 
@@ -332,6 +406,24 @@ def render_prediction() -> None:
             }
         )
         st.bar_chart(chart)
+
+    st.divider()
+    st.subheader("3D structure view")
+    viewer_top_n = st.slider(
+        "Candidates highlighted",
+        min_value=1,
+        max_value=min(25, len(ranking)),
+        value=min(10, len(ranking)),
+        step=1,
+        help="Highlights the highest-priority candidates on the selected chain.",
+    )
+    render_protein_viewer(
+        result["structure_bytes"],
+        result["structure_format"],
+        chain,
+        ranking,
+        viewer_top_n,
+    )
 
     warnings = result["warnings"]
     if warnings:
