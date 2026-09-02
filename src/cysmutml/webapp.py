@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import re
 import tempfile
 from pathlib import Path
+from urllib.error import HTTPError, URLError
+from urllib.request import Request, urlopen
 
 import pandas as pd
 import streamlit as st
-from Bio.PDB import PDBParser
+from Bio.PDB import MMCIFParser, PDBParser
 
 from cysmutml.models.inference import predict_cys_mutations
 from cysmutml.ranking.engineering import rank_predictions
@@ -17,53 +20,165 @@ ROOT = Path(__file__).resolve().parents[2]
 EXAMPLE_PDB = ROOT / "examples" / "real_case" / "1csp.pdb"
 MODEL_PATH = ROOT / "models" / "cysmutml_model.joblib"
 CONFIG_PATH = ROOT / "configs" / "default.yaml"
+BRAND_IMAGE = ROOT / "docs" / "figures" / "cysmutml_github_cover.jpg"
+
+
+def apply_style() -> None:
+    st.markdown(
+        """
+        <style>
+        .block-container { max-width: 1180px; padding-top: 2rem; }
+        .hero { padding: 1.6rem 1.8rem; border-radius: 18px; background:
+          linear-gradient(120deg, #071b3a 0%, #123d72 58%, #1d5da8 100%);
+          color: white; margin-bottom: 1.2rem; }
+        .hero h1 { margin: 0; font-size: 2.35rem; letter-spacing: -0.04em; }
+        .hero p { margin: 0.45rem 0 0; color: #dbeafe; font-size: 1.05rem; }
+        div[data-testid="stMetric"] { background: #f5f8fc; border: 1px solid #e3eaf3;
+          padding: .7rem .9rem; border-radius: 12px; }
+        .section-note { color: #526276; font-size: .92rem; }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
 
 
 @st.cache_data
 def load_versioned_metrics() -> tuple[pd.DataFrame, pd.DataFrame]:
     result_dir = ROOT / "results" / "physchem_model_comparison"
-    overall = pd.read_csv(result_dir / "regression_cv_metrics.csv")
-    cys = pd.read_csv(result_dir / "cys_specific_metrics.csv")
-    return overall, cys
+    return (
+        pd.read_csv(result_dir / "regression_cv_metrics.csv"),
+        pd.read_csv(result_dir / "cys_specific_metrics.csv"),
+    )
 
 
-def available_chains(pdb_path: str | Path) -> list[str]:
-    structure = PDBParser(QUIET=True).get_structure("query", str(pdb_path))
+@st.cache_data(show_spinner=False)
+def download_structure(source: str, identifier: str) -> tuple[bytes, str]:
+    identifier = identifier.strip()
+    if source == "RCSB / PDB ID":
+        pdb_id = identifier.upper()
+        if not re.fullmatch(r"[0-9A-Z]{4}", pdb_id):
+            raise ValueError("Enter a valid four-character PDB code, for example 1CSP.")
+        url = f"https://files.rcsb.org/download/{pdb_id}.pdb"
+        filename = f"{pdb_id}.pdb"
+    else:
+        accession = identifier.upper().split("-")[0]
+        if not re.fullmatch(r"[A-Z0-9]{6,10}", accession):
+            raise ValueError("Enter a valid UniProt accession, for example P0A7E1.")
+
+        request = Request(
+            f"https://rest.uniprot.org/uniprotkb/{accession}.txt",
+            headers={"User-Agent": "CysMutML/1.2"},
+        )
+        try:
+            with urlopen(request, timeout=30) as response:
+                uniprot_text = response.read().decode("utf-8", errors="replace")
+        except (HTTPError, URLError) as error:
+            raise ValueError(f"UniProt accession not found: {accession}") from error
+
+        pdb_ids = re.findall(r"^DR   PDB;\s*([0-9A-Za-z]{4});", uniprot_text, flags=re.MULTILINE)
+        if pdb_ids:
+            pdb_id = pdb_ids[0].upper()
+            url = f"https://files.rcsb.org/download/{pdb_id}.pdb"
+            filename = f"{accession}_{pdb_id}.pdb"
+        else:
+            url = f"https://alphafold.ebi.ac.uk/files/AF-{accession}-F1-model_v4.pdb"
+            filename = f"AF-{accession}-F1-model_v4.pdb"
+
+    try:
+        with urlopen(Request(url, headers={"User-Agent": "CysMutML/1.2"}), timeout=60) as response:
+            payload = response.read()
+    except (HTTPError, URLError) as error:
+        raise ValueError(f"Could not download structure from {url}") from error
+    if not payload.startswith((b"HEADER", b"ATOM", b"MODEL", b"REMARK")):
+        raise ValueError("The downloaded response is not a readable PDB structure.")
+    return payload, filename
+
+
+def available_chains(structure_path: str | Path) -> list[str]:
+    path = Path(structure_path)
+    if path.suffix.lower() in {".cif", ".mmcif"}:
+        structure = MMCIFParser(QUIET=True).get_structure("query", str(path))
+    else:
+        structure = PDBParser(QUIET=True).get_structure("query", str(path))
     return sorted({chain.id for model in structure for chain in model})
 
 
 def _metric_summary(metrics: pd.DataFrame) -> pd.DataFrame:
     columns = ["mae", "rmse", "r2", "pearson", "spearman"]
-    return metrics.groupby("model")[columns].mean().sort_values("mae").round(3)
+    summary = metrics.groupby("model")[columns].mean().sort_values("mae").round(3)
+    return summary.rename(
+        columns={
+            "mae": "MAE",
+            "rmse": "RMSE",
+            "r2": "R²",
+            "pearson": "Pearson",
+            "spearman": "Spearman",
+        }
+    )
+
+
+def _humanize_ranking(ranking: pd.DataFrame) -> pd.DataFrame:
+    columns = [
+        "rank_engineering",
+        "mutation",
+        "predicted_destabilization_ddg",
+        "relative_sasa",
+        "stability_component",
+        "accessibility_component",
+        "rigidification_potential",
+        "final_engineering_score",
+    ]
+    available = [column for column in columns if column in ranking.columns]
+    shown = ranking[available].copy()
+    shown = shown.rename(
+        columns={
+            "rank_engineering": "Priority",
+            "mutation": "Candidate",
+            "predicted_destabilization_ddg": "Predicted ΔΔG",
+            "relative_sasa": "Relative exposure",
+            "stability_component": "Stability signal",
+            "accessibility_component": "Accessibility",
+            "rigidification_potential": "Rigidity potential",
+            "final_engineering_score": "Final priority",
+        }
+    )
+    numeric = shown.select_dtypes(include="number").columns
+    shown[numeric] = shown[numeric].round(3)
+    return shown
 
 
 def render_overview() -> None:
-    st.subheader("A leakage-aware baseline for cysteine engineering")
+    if BRAND_IMAGE.exists():
+        st.image(str(BRAND_IMAGE), use_container_width=True)
+    st.markdown(
+        """
+        <div class="hero">
+          <h1>CysMutML</h1>
+          <p>Interpretable machine learning and structural analysis for X→Cys prioritisation.</p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
     st.write(
-        "CysMutML predicts mutation-associated destabilization from FireProtDB and "
-        "combines that signal with transparent target-structure diagnostics."
+        "CysMutML estimates mutation-associated destabilisation from FireProtDB and "
+        "combines that signal with transparent, structure-derived ranking components."
     )
     first, second, third, fourth = st.columns(4)
-    first.metric("Aggregated mutations", "352,005")
+    first.metric("Training rows", "352,005")
     second.metric("Protein groups", "542")
-    third.metric("X→Cys records", "16,236")
-    fourth.metric("Primary validation", "Group-aware")
-
-    st.image(str(ROOT / "docs" / "figures" / "cysmutml_workflow.png"))
-    st.info(
-        "The learned stability model and the structural engineering heuristic are "
-        "separate. The final ranking is not a calibrated probability."
+    third.metric("X→Cys rows", "16,236")
+    fourth.metric("Validation", "Protein-aware")
+    st.markdown(
+        '<p class="section-note">The ML model and the structural ranking heuristic are deliberately separate. '
+        "Neither is a calibrated probability of experimental success.</p>",
+        unsafe_allow_html=True,
     )
 
 
 def render_benchmark() -> None:
     st.subheader("Model benchmark")
     overall, cys = load_versioned_metrics()
-    st.caption(
-        "Versioned full-data results use three-fold GroupKFold by protein. "
-        "The homology-aware MVP is shown when its result artifacts are present."
-    )
-
+    st.caption("Three-fold grouped validation on the full physicochemical dataset.")
     left, right = st.columns(2)
     with left:
         st.markdown("**All mutations**")
@@ -72,14 +187,15 @@ def render_benchmark() -> None:
         st.markdown("**X→Cys subset**")
         st.dataframe(_metric_summary(cys), use_container_width=True)
 
+    st.markdown("**Mean absolute error**")
     mean_mae = overall.groupby("model")["mae"].mean().sort_values()
     st.bar_chart(mean_mae, horizontal=True, x_label="MAE (kcal/mol)")
 
-    homology_folds = ROOT / "results" / "homology_validation" / (
-        "split_comparison_fold_metrics.csv"
-    )
+    homology_folds = ROOT / "results" / "homology_validation" / "split_comparison_fold_metrics.csv"
     if homology_folds.exists():
-        st.markdown("**150-protein homology-aware MVP**")
+        st.divider()
+        st.subheader("Homology-aware MVP")
+        st.caption("150 proteins, 5,634 rows, MMseqs2 at 30% identity / 80% coverage, seed 42.")
         folds = pd.read_csv(homology_folds)
         comparison = (
             folds.groupby(["split_strategy", "model"])[
@@ -87,13 +203,18 @@ def render_benchmark() -> None:
             ]
             .mean()
             .round(3)
+            .rename(
+                columns={
+                    "mae": "MAE",
+                    "rmse": "RMSE",
+                    "r2": "R²",
+                    "spearman": "Spearman",
+                    "fit_seconds": "Fit time (s)",
+                }
+            )
         )
         st.dataframe(comparison, use_container_width=True)
-    else:
-        st.warning(
-            "The homology-split infrastructure is available, but numerical MVP "
-            "artifacts have not yet been added to this checkout."
-        )
+        st.info("The homology-clustered split is intentionally stricter and exposes residual relatedness between proteins.")
 
 
 def _run_prediction(pdb_path: Path, chain: str) -> dict[str, object]:
@@ -127,35 +248,58 @@ def _run_prediction(pdb_path: Path, chain: str) -> dict[str, object]:
 
 def render_prediction() -> None:
     st.subheader("Predict X→Cys candidates")
-    source = st.radio("Structure", ["Built-in 1CSP example", "Upload PDB"], horizontal=True)
-    uploaded = None
-    if source == "Upload PDB":
-        uploaded = st.file_uploader("PDB structure", type=["pdb"])
+    st.caption("Choose a structure source. Technical identifiers stay out of the result tables.")
+    source = st.radio(
+        "Structure source",
+        ["Bundled 1CSP example", "Upload PDB/mmCIF", "RCSB / PDB ID", "UniProt accession"],
+        horizontal=True,
+    )
 
-    temporary_path = None
-    if uploaded is None and source == "Upload PDB":
-        st.info("Upload a PDB file to continue.")
-        return
-
-    if uploaded is None:
-        pdb_path = EXAMPLE_PDB
-    else:
+    temporary_path: Path | None = None
+    source_label = "1CSP example"
+    if source == "Upload PDB/mmCIF":
+        uploaded = st.file_uploader("Upload a structure file", type=["pdb", "cif", "mmcif"])
+        if uploaded is None:
+            st.info("Upload a PDB or mmCIF file to continue.")
+            return
         suffix = Path(uploaded.name).suffix or ".pdb"
         handle = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
         handle.write(uploaded.getvalue())
         handle.close()
         temporary_path = Path(handle.name)
         pdb_path = temporary_path
+        source_label = uploaded.name
+    elif source in {"RCSB / PDB ID", "UniProt accession"}:
+        placeholder = "1CSP" if source.startswith("RCSB") else "P0A7E1"
+        identifier = st.text_input("Identifier", placeholder=placeholder).strip()
+        if not identifier:
+            st.info("Enter an identifier to continue.")
+            return
+        try:
+            payload, filename = download_structure(source, identifier)
+        except ValueError as error:
+            st.error(str(error))
+            return
+        handle = tempfile.NamedTemporaryFile(delete=False, suffix=".pdb")
+        handle.write(payload)
+        handle.close()
+        temporary_path = Path(handle.name)
+        pdb_path = temporary_path
+        source_label = filename
+        st.caption(f"Loaded structure: {filename}")
+    else:
+        pdb_path = EXAMPLE_PDB
 
     try:
         chains = available_chains(pdb_path)
         if not chains:
             st.error("No protein chains were detected.")
             return
-        chain = st.selectbox("Chain", chains)
-        if st.button("Run CysMutML", type="primary"):
-            with st.spinner("Predicting stability and calculating structural features..."):
+        chain = st.selectbox("Chain", chains, key="prediction_chain")
+        if st.button("Run prediction", type="primary"):
+            with st.spinner("Running the stability model and structural ranking..."):
                 st.session_state["prediction"] = _run_prediction(pdb_path, chain)
+                st.session_state["prediction_source"] = source_label
     except Exception as error:
         st.error(f"Could not process this structure: {error}")
     finally:
@@ -167,27 +311,32 @@ def render_prediction() -> None:
         return
 
     ranking = result["ranking"]
-    top_percent = st.slider("Candidates displayed (%)", 5, 100, 20, 5)
+    st.success(f"Analysis complete: {st.session_state.get('prediction_source', source_label)}")
+    top_percent = st.slider("Candidates to display", 5, 100, 20, 5)
     count = max(1, round(len(ranking) * top_percent / 100))
     shown = ranking.nsmallest(count, "rank_engineering")
-    display_columns = [
-        "rank_engineering",
-        "mutation",
-        "predicted_destabilization_ddg",
-        "relative_sasa",
-        "cys_site_suitability",
-        "rigidification_potential",
-        "final_engineering_score",
+    st.metric("Candidates shown", f"{count} of {len(ranking)}")
+    st.dataframe(_humanize_ranking(shown), use_container_width=True, hide_index=True)
+
+    chart_columns = [
+        column
+        for column in ["stability_component", "accessibility_component", "rigidification_potential", "final_engineering_score"]
+        if column in shown
     ]
-    st.dataframe(shown[display_columns].round(3), use_container_width=True)
-    chart = shown.set_index("mutation")[
-        ["stability_component", "accessibility_component", "final_engineering_score"]
-    ]
-    st.bar_chart(chart)
+    if chart_columns:
+        chart = shown.set_index("mutation")[chart_columns].rename(
+            columns={
+                "stability_component": "Stability",
+                "accessibility_component": "Accessibility",
+                "rigidification_potential": "Rigidity potential",
+                "final_engineering_score": "Final priority",
+            }
+        )
+        st.bar_chart(chart)
 
     warnings = result["warnings"]
     if warnings:
-        with st.expander("Out-of-domain warnings"):
+        with st.expander("Warnings and domain checks"):
             for warning in warnings:
                 st.write(f"- {warning}")
 
@@ -216,36 +365,34 @@ def render_methods() -> None:
     st.subheader("Methods and limitations")
     st.markdown(
         """
-**Learned from FireProtDB**
+        **Learned from FireProtDB**
 
-- mutation-associated destabilization from amino-acid physicochemical descriptors;
-- Ridge is deployed as the interpretable baseline.
+        The deployed Ridge model uses physicochemical mutation descriptors, mutation
+        deltas and BLOSUM62. It estimates mutation-associated destabilisation.
 
-**Calculated from the target PDB**
+        **Calculated from the target structure**
 
-- relative SASA;
-- B-factor-derived flexibility;
-- local exposed Lys and native-Cys context;
-- distances to user-protected residues.
+        Relative exposure, B-factor-derived flexibility, local exposed-lysine context,
+        existing-cysteine context and optional protected-site penalties.
 
-**Not predicted**
+        **Interpretation**
 
-CysMutML does not predict immobilization yield, retained activity, cysteine
-reactivity, disulfide formation, or probability of experimental success.
-"""
+        These signals help prioritise candidates for inspection or experiment. They do
+        not predict immobilisation yield, retained activity, cysteine reactivity,
+        disulfide formation or probability of success.
+        """
     )
     st.link_button(
         "Read the model card",
-        "https://github.com/jjimenezgar/CysMutML/blob/main/MODEL_CARD.md",
+        "https://github.com/jjimenezgar/CysMutML/blob/portfolio-v1.1/MODEL_CARD.md",
     )
 
 
 def main() -> None:
     st.set_page_config(page_title="CysMutML", page_icon="🧬", layout="wide")
-    st.title("CysMutML")
-    st.caption("Interpretable ML and structural bioinformatics for X→Cys prioritization")
+    apply_style()
     overview, benchmark, prediction, methods = st.tabs(
-        ["Overview", "Model Benchmark", "Predict Cys Mutations", "Methods & Limitations"]
+        ["Overview", "Model benchmark", "Predict candidates", "Methods"]
     )
     with overview:
         render_overview()
