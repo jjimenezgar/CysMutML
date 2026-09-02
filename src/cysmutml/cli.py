@@ -44,6 +44,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--raw", default="data/raw/fireprotdb.csv")
     p.add_argument("--output", default="data/processed/mutations.csv")
     p.add_argument("--download-fireprotdb", action="store_true")
+    p.add_argument("--fetch-sequences", action="store_true")
 
     p = sub.add_parser("build-features")
     p.add_argument("--input", default="data/processed/mutations.csv")
@@ -150,7 +151,11 @@ def main(argv: list[str] | None = None) -> int:
         raw = Path(args.raw)
         if args.download_fireprotdb:
             download_fireprotdb_csv(raw)
-        summary = prepare_data(raw, args.output)
+        summary = prepare_data(
+            raw,
+            args.output,
+            fetch_sequences=args.download_fireprotdb or args.fetch_sequences,
+        )
         print(json.dumps(summary, indent=2))
     elif args.command == "build-features":
         df = build_feature_table(args.input, args.output)
