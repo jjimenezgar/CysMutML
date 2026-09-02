@@ -21,7 +21,7 @@ from cysmutml.models.inference import (
     generate_cys_feature_rows,
     predict_cys_mutations,
 )
-from cysmutml.models.train import train_final_model
+from cysmutml.models.train import evaluate_models, train_final_model
 from cysmutml.mutations import parse_mutation
 from cysmutml.ranking.engineering import (
     accessibility_component_from_sasa,
@@ -367,3 +367,43 @@ def test_unique_sequences_rejects_conflicting_protein_records():
     )
     with pytest.raises(ValueError, match="2 canonical sequences"):
         unique_protein_sequences(table)
+
+
+
+def test_model_evaluation_accepts_homology_groups(tmp_path):
+    raw_path = tmp_path / "homology_eval_raw.csv"
+    rows = []
+    mutations = ["A1C", "K2A", "V3C"]
+    for protein_index in range(6):
+        for mutation_index, mutation in enumerate(mutations):
+            rows.append(
+                {
+                    "protein": f"p{protein_index + 1}",
+                    "mutation": mutation,
+                    "ddg": 0.2 * protein_index - 0.1 * mutation_index,
+                }
+            )
+    pd.DataFrame(rows).to_csv(raw_path, index=False)
+    feature_path = tmp_path / "homology_eval_features.csv"
+    features = build_feature_table(raw_path, feature_path)
+    cluster_by_protein = {
+        "p1": "c1",
+        "p2": "c1",
+        "p3": "c2",
+        "p4": "c2",
+        "p5": "c3",
+        "p6": "c3",
+    }
+    features["sequence_cluster"] = features["protein_id"].map(cluster_by_protein)
+    features.to_csv(feature_path, index=False)
+
+    metrics, predictions, _ = evaluate_models(
+        feature_path,
+        tmp_path / "homology_results",
+        include_structural=False,
+        model_names=["ridge"],
+        group_column="sequence_cluster",
+    )
+    assert set(metrics["group_column"]) == {"sequence_cluster"}
+    assert set(predictions["group_column"]) == {"sequence_cluster"}
+    assert predictions.groupby("group_id")["fold"].nunique().eq(1).all()
