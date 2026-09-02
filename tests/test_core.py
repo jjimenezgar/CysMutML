@@ -9,6 +9,7 @@ from cysmutml.amino_acids import physicochemical_features
 from cysmutml.data.audit import audit_duplicates_and_aggregate
 from cysmutml.data.fireprotdb import (
     download_fireprotdb_sequences,
+    download_uniprot_sequences,
     normalize_fireprotdb_table,
 )
 from cysmutml.evaluation.homology import (
@@ -101,6 +102,26 @@ def test_fireprotdb_sequence_download(monkeypatch):
     )
     sequences, failed = download_fireprotdb_sequences(["17"])
     assert sequences == {"17": "ACDEFG"}
+    assert failed == []
+
+
+def test_uniprot_sequence_download(monkeypatch):
+    class Response:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_):
+            return None
+
+        def read(self):
+            return b">sp|P12345|EXAMPLE\nACDE\nFG\n"
+
+    monkeypatch.setattr(
+        "cysmutml.data.fireprotdb.urlopen",
+        lambda *_args, **_kwargs: Response(),
+    )
+    sequences, failed = download_uniprot_sequences(["P12345"])
+    assert sequences == {"P12345": "ACDEFG"}
     assert failed == []
 
 
