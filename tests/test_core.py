@@ -337,6 +337,8 @@ def test_homology_mapping_fails_on_conflicts_and_missing_proteins():
     incomplete = pd.DataFrame({"protein_id": ["p1"], "sequence_cluster": ["c1"]})
     with pytest.raises(ValueError, match="does not cover"):
         attach_sequence_clusters(features, incomplete)
+    partial = attach_sequence_clusters(features, incomplete, require_complete=False)
+    assert partial["protein_id"].tolist() == ["p1"]
 
 
 def test_sequence_group_metadata_never_becomes_a_model_feature():
