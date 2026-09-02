@@ -28,6 +28,13 @@ results/physchem_model_comparison/*
 !results/physchem_model_comparison/regression_cv_metrics.csv
 !results/physchem_model_comparison/cys_specific_metrics.csv
 !results/physchem_model_comparison/physchem_model_comparison_summary.csv
+!results/homology_validation/
+results/homology_validation/*
+!results/homology_validation/*.csv
+!results/homology_validation/*.json
+!results/homology_validation/figures/
+results/homology_validation/figures/*
+!results/homology_validation/figures/*.png
 !results/model_interpretability/
 !results/model_interpretability/ridge_coefficients.csv
 !results/model_interpretability/ridge_coefficients_top15.png

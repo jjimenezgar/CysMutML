@@ -2,9 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, portfolio-v1.1]
   pull_request:
-    branches: [main]
 
 permissions:
   contents: read
@@ -43,3 +41,30 @@ jobs:
         run: python -m pip install -e ".[portfolio]"
       - name: Execute portfolio notebook
         run: jupyter nbconvert --to notebook --execute notebooks/CysMutML_Portfolio_Demo.ipynb --output /tmp/CysMutML_Portfolio_Demo.executed.ipynb --ExecutePreprocessor.timeout=180
+
+  streamlit-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install app dependencies
+        run: python -m pip install -e ".[app]"
+      - name: Start and probe Streamlit
+        run: |
+          python -m streamlit run streamlit_app.py \
+            --server.headless true \
+            --server.port 8501 > /tmp/cysmutml-streamlit.log 2>&1 &
+          cysmutml_app_pid=$!
+          for attempt in {1..20}; do
+            if curl --fail --silent http://localhost:8501/_stcore/health; then
+              kill "$cysmutml_app_pid"
+              exit 0
+            fi
+            sleep 1
+          done
+          sed -n '1,200p' /tmp/cysmutml-streamlit.log
+          kill "$cysmutml_app_pid" || true
+          exit 1

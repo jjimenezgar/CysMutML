@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import platform
 import subprocess
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -34,11 +35,16 @@ def evaluate_models(
     config_path: str | Path = "configs/default.yaml",
     include_structural: bool = True,
     model_names: list[str] | None = None,
+    group_column: str = "protein_id",
 ) -> tuple[pd.DataFrame, pd.DataFrame, str]:
     config = load_config(config_path)
     df = pd.read_csv(feature_csv, low_memory=False)
     target = "destabilization_ddg_kcal_mol"
-    groups = df["protein_id"].fillna("unknown_protein").astype(str)
+    if group_column not in df.columns:
+        raise ValueError(f"Grouping column {group_column!r} is missing from the feature table")
+    if df[group_column].isna().any():
+        raise ValueError(f"Grouping column {group_column!r} contains missing values")
+    groups = df[group_column].astype(str)
     n_groups = groups.nunique()
     n_splits = min(int(config["cv_folds"]), n_groups)
     if n_splits < 2:
@@ -56,16 +62,33 @@ def evaluate_models(
 
     for model_name, estimator in models.items():
         for fold, (train_idx, test_idx) in enumerate(splitter.split(X, y, groups), start=1):
+            fit_start = time.perf_counter()
             estimator.fit(X.iloc[train_idx], y.iloc[train_idx])
+            fit_seconds = time.perf_counter() - fit_start
+            predict_start = time.perf_counter()
             pred = estimator.predict(X.iloc[test_idx])
+            predict_seconds = time.perf_counter() - predict_start
             fold_metrics = regression_metrics(y.iloc[test_idx], pred)
-            metrics_rows.append({"model": model_name, "fold": fold, **fold_metrics})
+            metrics_rows.append(
+                {
+                    "model": model_name,
+                    "fold": fold,
+                    "group_column": group_column,
+                    "n_train_groups": int(groups.iloc[train_idx].nunique()),
+                    "n_test_groups": int(groups.iloc[test_idx].nunique()),
+                    "fit_seconds": fit_seconds,
+                    "predict_seconds": predict_seconds,
+                    **fold_metrics,
+                }
+            )
             for row_i, y_hat in zip(test_idx, pred, strict=True):
                 prediction_rows.append(
                     {
                         "model": model_name,
                         "fold": fold,
                         "protein_id": df.iloc[row_i]["protein_id"],
+                        "group_column": group_column,
+                        "group_id": groups.iloc[row_i],
                         "mutation": df.iloc[row_i]["mutation"],
                         "observed": y.iloc[row_i],
                         "predicted": float(y_hat),

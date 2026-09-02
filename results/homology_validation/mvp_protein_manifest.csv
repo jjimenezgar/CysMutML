@@ -1,0 +1,151 @@
+protein_id,sequence_cluster,protein_grouped_fold,homology_clustered_fold
+"1CSQ, Cold shock protein CspB",cluster_00001,1,1
+Cold shock protein CspA,cluster_00001,1,1
+Cold shock protein CspB,cluster_00001,2,1
+"Cold shock protein CspB, 1CSQ",cluster_00001,1,1
+Acyl-CoA-binding protein,cluster_00002,2,3
+Acylphosphatase-1,cluster_00003,2,1
+Adenosine deaminase,cluster_00004,2,1
+Adenylate kinase,cluster_00005,2,2
+"Adrenodoxin, mitochondrial",cluster_00006,2,1
+Apolipophorin-3b,cluster_00010,1,3
+Apolipoprotein A-I,cluster_00011,1,1
+Apolipoprotein E,cluster_00012,2,1
+Aspartate aminotransferase,cluster_00013,1,1
+Attachment protein G3P,cluster_00014,3,2
+Azurin,cluster_00015,3,2
+Bacteriorhodopsin,cluster_00016,3,3
+Barstar,cluster_00017,3,2
+Beta-lactamase,cluster_00018,2,1
+Beta-lactamase TEM,cluster_00019,3,3
+Beta-lactoglobulin,cluster_00020,3,3
+Breast cancer type 1 susceptibility protein,cluster_00021,2,2
+Bromodomain-containing protein 2,cluster_00022,2,1
+Bromodomain-containing protein 3,cluster_00022,2,1
+Cellular tumor antigen p53,cluster_00025,2,3
+Chemotaxis protein CheY,cluster_00026,1,2
+Chitosanase,cluster_00028,1,3
+Colicin-E9 immunity protein,cluster_00030,3,2
+Collagen alpha-1(XVIII) chain,cluster_00031,1,2
+Copper-transporting ATPase 2,cluster_00032,3,1
+Creatine kinase M-type,cluster_00033,1,3
+Cyclin-dependent kinase inhibitor 2A,cluster_00034,3,2
+Cyclin-dependent kinases regulatory subunit,cluster_00035,2,1
+Cytochrome b5,cluster_00037,1,2
+Cytochrome c,cluster_00038,3,2
+Cytochrome c isoform 1,cluster_00038,1,2
+"Cytochrome c, somatic",cluster_00038,2,2
+Cytochrome c-551,cluster_00039,2,3
+Cytochrome c2,cluster_00040,3,3
+Cytosolic beta-glucosidase,cluster_00041,2,2
+DELTA-stichotoxin-She4a,cluster_00042,3,1
+DELTA-stichotoxin-She4b,cluster_00042,2,1
+DNA-Binding protein G5P,cluster_00043,3,1
+DNA-binding protein 7d,cluster_00044,3,2
+DNA-binding protein HU,cluster_00045,2,1
+DNA-binding protein HU 1,cluster_00045,3,1
+DNA-binding transcriptional dual regulator CRP,cluster_00046,2,2
+Dihydrofolate reductase,cluster_00047,3,3
+Dihydrolipoyllysine-residue acetyltransferase component of pyruvate dehydrogenase complex,cluster_00048,3,3
+Dihydrolipoyllysine-residue succinyltransferase component of 2-oxoglutarate dehydrogenase complex,cluster_00048,3,3
+Disks large homolog 4,cluster_00049,1,2
+Divalent-cation tolerance protein CutA,cluster_00050,1,1
+Eglin C,cluster_00052,3,1
+"Endo-1,4-beta-xylanase",cluster_00053,1,1
+Endoglucanase C,cluster_00054,1,3
+Endolysin,cluster_00055,3,3
+Fibroblast growth factor 1,cluster_00059,1,1
+"Flavodoxin, Flavodoxin",cluster_00061,2,3
+Forkhead box protein P1,cluster_00062,3,2
+Gamma-crystallin D,cluster_00064,1,2
+General control transcription factor GCN4,cluster_00065,2,1
+Genome polyprotein,cluster_00066,2,2
+Glutamate dehydrogenase,cluster_00067,2,3
+Granulocyte-macrophage colony-stimulating factor,cluster_00068,2,1
+Growth factor receptor-bound protein 2,cluster_00069,1,3
+Growth hormone receptor,cluster_00070,1,1
+Guanyl-specific ribonuclease Sa3,cluster_00072,3,3
+Guanyl-specific ribonuclease T1,cluster_00073,3,3
+Heterokaryon incompatibility protein s,cluster_00074,1,3
+High mobility group protein B1,cluster_00075,3,3
+Homeotic protein antennapedia,cluster_00076,3,2
+Immunoglobulin G-binding protein G,cluster_00077,2,2
+Immunoglobulin heavy constant gamma 1,cluster_00078,1,3
+Immunoglobulin kappa variable 1D-33,cluster_00079,2,1
+Insulin,cluster_00080,3,3
+Insulin receptor,cluster_00081,1,3
+Interleukin-1 beta,cluster_00082,1,3
+Interleukin-6,cluster_00083,3,3
+L-asparaginase,cluster_00084,2,2
+Large ribosomal subunit protein bL9,cluster_00085,1,1
+Large ribosomal subunit protein eL30,cluster_00086,2,1
+Lethal factor,cluster_00087,1,3
+Lipid A palmitoyltransferase PagP,cluster_00088,3,3
+Lysozyme C,cluster_00089,2,2
+"Lysozyme C, milk isozyme",cluster_00089,1,2
+Major outer membrane lipoprotein Lpp,cluster_00090,1,1
+Major prion protein,cluster_00091,3,3
+Maltose/maltodextrin-binding periplasmic protein,cluster_00092,1,2
+"Fatty acid-binding protein, heart",cluster_00093,2,2
+Myelin P2 protein,cluster_00093,2,2
+Myoglobin,cluster_00094,2,3
+N-(5'-phosphoribosyl)anthranilate isomerase,cluster_00095,3,2
+Neuronal calcium sensor 1,cluster_00096,1,2
+Outer membrane protein A,cluster_00097,3,3
+Outer membrane protein YopM,cluster_00098,3,3
+Pancreatic trypsin inhibitor,cluster_00099,2,2
+Parathion hydrolase,cluster_00100,2,2
+Parvalbumin alpha,cluster_00101,3,1
+Peptidyl-prolyl cis-trans isomerase FKBP1A,cluster_00102,3,2
+Peptidyl-prolyl cis-trans isomerase NIMA-interacting 1,cluster_00103,1,2
+Peroxisome proliferator-activated receptor gamma,cluster_00104,2,1
+"Phenylalanine--tRNA ligase, mitochondrial",cluster_00105,1,1
+Phosphocarrier protein HPr,cluster_00106,2,1
+Phosphoglycerate kinase,cluster_00107,1,3
+Phosphoglycerate kinase 1,cluster_00107,3,3
+Pre-mRNA-processing factor 40 homolog A,cluster_00110,3,1
+Pro-Pol polyprotein,cluster_00111,3,1
+Prolactin,cluster_00112,3,2
+Protein P-30,cluster_00113,1,3
+Protein S100-B,cluster_00114,3,2
+Protein S100-G,cluster_00115,3,2
+Proteinase inhibitor,cluster_00116,2,3
+Regulatory protein cro,cluster_00117,3,2
+Regulatory protein rop,cluster_00118,1,1
+Repressor protein cI,cluster_00119,1,3
+Ribonuclease,cluster_00120,3,3
+Ribonuclease HI,cluster_00121,2,2
+Ribonuclease HII,cluster_00122,1,1
+Ribonuclease MC,cluster_00123,2,1
+Ribonuclease pancreatic,cluster_00124,2,3
+Ribose import binding protein RbsB,cluster_00125,2,3
+Rubredoxin,cluster_00126,1,2
+SCO1 protein homolog,cluster_00127,2,1
+Serine/threonine-protein kinase pim-1,cluster_00128,1,1
+Sialidase,cluster_00129,1,2
+Soluble cytochrome b562,cluster_00131,3,3
+"Spectrin alpha chain, non-erythrocytic 1",cluster_00132,2,2
+Steroid Delta-isomerase,cluster_00133,1,2
+Subtilisin BPN',cluster_00134,1,3
+Subtilisin inhibitor,cluster_00135,2,2
+Subtilisin-chymotrypsin inhibitor-2A,cluster_00136,3,3
+"Superoxide dismutase [Mn], mitochondrial",cluster_00137,3,3
+T-cell surface antigen CD2,cluster_00138,2,1
+Tail spike protein,cluster_00139,2,3
+Thermonuclease,cluster_00141,3,3
+Thioredoxin,cluster_00142,3,2
+Thioredoxin 1,cluster_00142,2,2
+Thioredoxin-like protein 4A,cluster_00143,1,3
+Tissue factor,cluster_00144,3,2
+Tissue-type plasminogen activator,cluster_00145,1,2
+Titin,cluster_00146,2,1
+Transcriptional activator Myb,cluster_00147,2,1
+Transcriptional coactivator YAP1,cluster_00148,1,3
+Transcriptional repressor arc,cluster_00149,3,3
+Tryptophan synthase alpha chain,cluster_00150,2,1
+Twitchin,cluster_00151,2,1
+Type-3 ice-structuring protein HPLC 12,cluster_00152,3,2
+Tyrosine--tRNA ligase,cluster_00153,3,2
+Tyrosine-protein kinase Fyn,cluster_00154,1,2
+U1 small nuclear ribonucleoprotein A,cluster_00155,3,2
+non-specific serine/threonine protein kinase,cluster_00157,1,3

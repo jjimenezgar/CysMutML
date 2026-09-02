@@ -1,0 +1,16 @@
+{
+  "source_proteins": 543,
+  "mapped_proteins": 171,
+  "included_proteins": 150,
+  "excluded_proteins_without_cluster": 372,
+  "sequence_clusters": 157,
+  "largest_cluster": 4,
+  "median_cluster_size": 1.0,
+  "source_feature_rows": 352005,
+  "included_feature_rows": 5634,
+  "target_proteins": 150,
+  "sampling_seed": 42,
+  "sampling_unit": "complete_sequence_cluster",
+  "permutation_importance_rows": 2000,
+  "permutation_importance_repeats": 3
+}

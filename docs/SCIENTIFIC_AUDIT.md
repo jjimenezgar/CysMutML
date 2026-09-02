@@ -204,3 +204,26 @@ The previous structure-trained ML ablation is archived, not deployed:
 - Stability does not equal activity.
 - Stability does not equal immobilization performance.
 - Ranking weights require experimental calibration for application-specific deployment.
+
+
+## Homology-aware MVP (2026-09-02)
+
+A reduced benchmark was executed after enriching the FireProtDB export with UniProt
+reference sequences. MMseqs2 used 30% minimum sequence identity, 80% coverage, and
+coverage mode 0. The source table contained 543 protein names; 171 mapped to 157
+clusters, while 372 names without usable sequences were excluded. A deterministic
+complete-cluster sample (seed 42) contained 150 proteins and 5,634 mutation rows.
+
+| Split | Ridge MAE | HGB MAE | RF MAE | Dummy MAE |
+|---|---:|---:|---:|---:|
+| Protein grouped | 1.508 | 1.529 | 1.538 | 1.493 |
+| Homology clustered | 1.523 | 1.534 | 1.544 | 1.499 |
+
+For X→Cys rows, Ridge MAE was 1.535 with protein grouping and 1.630 with homology
+grouping. The homology-aware estimate is therefore the more conservative headline
+for transfer to less-related proteins, but the sample is deliberately small and
+heterogeneous. It is evidence of validation design, not a state-of-the-art claim.
+
+The benchmark also records fit/predict runtime, Ridge interpretability via
+coefficients, and held-out permutation importance for the tree models. Cluster IDs,
+representative IDs, and sequence provenance IDs are excluded from model features.

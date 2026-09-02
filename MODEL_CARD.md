@@ -54,15 +54,28 @@ Mean metrics across protein-grouped folds:
 HGB performs slightly better. Ridge remains deployed because the gain is small
 relative to the interpretability and operational simplicity of the linear model.
 
+### Homology-aware MVP
+
+A reduced, deterministic benchmark was executed on 150 proteins and 5,634 mutation
+rows after MMseqs2 clustering at 30% identity and 80% coverage. Mean MAE across three
+folds was 1.508 for Ridge with protein grouping and 1.523 with homology-cluster
+grouping. On X→Cys rows, the corresponding values were 1.535 and 1.630. The
+benchmark also includes Dummy, Random Forest, and HistGradientBoosting, fit/predict
+timings, and held-out permutation importance. These results demonstrate validation
+discipline and residual homology effects; they are not a claim of state-of-the-art
+accuracy.
+
+
 ## Evaluation design
 
 Primary evaluation groups rows by protein, so mutations from the same protein do
 not appear in both train and test folds. Random mutation-level splitting is not
 used as the headline result.
 
-This design does not guarantee separation of homologous proteins. A future
-sequence-cluster split is required to estimate performance on remote protein
-families.
+This design does not guarantee separation of homologous proteins. CysMutML v1.2
+adds an MMseqs2-based sequence-cluster split to estimate performance on less-related
+protein families. The infrastructure is CI-tested; numerical results are not claimed
+until the FireProtDB tables are regenerated and the experiment is executed.
 
 ## Known limitations
 
@@ -89,4 +102,5 @@ The repository contains:
 - model metadata and a serialized artifact;
 - self-contained tests;
 - a CI workflow for lint, tests, package build, and portfolio-notebook execution;
-- a retrospective validation with explicitly frozen heuristic settings.
+- a retrospective validation with explicitly frozen heuristic settings;
+- an executed, reduced homology-aware MVP with versioned fold metrics and sampling audit.

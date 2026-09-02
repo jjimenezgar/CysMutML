@@ -2,19 +2,31 @@ from pathlib import Path
 
 import joblib
 import pandas as pd
+import pytest
 from sklearn.model_selection import GroupKFold
 
 from cysmutml.amino_acids import physicochemical_features
 from cysmutml.data.audit import audit_duplicates_and_aggregate
-from cysmutml.data.fireprotdb import normalize_fireprotdb_table
+from cysmutml.data.fireprotdb import (
+    download_fireprotdb_sequences,
+    download_uniprot_sequences,
+    normalize_fireprotdb_table,
+)
+from cysmutml.evaluation.homology import (
+    attach_sequence_clusters,
+    grouped_fold_assignments,
+    select_cluster_complete_subset,
+    unique_protein_sequences,
+    validate_cluster_mapping,
+)
 from cysmutml.evaluation.structural_ablation import make_structural_cv_folds
-from cysmutml.features.build import build_feature_table
+from cysmutml.features.build import build_feature_table, feature_columns
 from cysmutml.models.inference import (
     _parse_protected_residues,
     generate_cys_feature_rows,
     predict_cys_mutations,
 )
-from cysmutml.models.train import train_final_model
+from cysmutml.models.train import evaluate_models, train_final_model
 from cysmutml.mutations import parse_mutation
 from cysmutml.ranking.engineering import (
     accessibility_component_from_sasa,
@@ -59,10 +71,58 @@ def test_property_delta_direction():
 
 
 def test_sign_convention_normalization():
-    raw = pd.DataFrame({"protein": ["p"], "mutation": ["A1C"], "ddg": [1.5]})
+    raw = pd.DataFrame(
+        {
+            "protein": ["p"],
+            "source_sequence_id": [17],
+            "mutation": ["A1C"],
+            "ddg": [1.5],
+        }
+    )
     out, summary = normalize_fireprotdb_table(raw)
     assert summary["raw_records"] == 1
     assert out.loc[0, "destabilization_ddg_kcal_mol"] == 1.5
+    assert out.loc[0, "fireprotdb_sequence_id"] == "17"
+
+
+def test_fireprotdb_sequence_download(monkeypatch):
+    class Response:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_):
+            return None
+
+        def read(self):
+            return b'"ACDEFG"'
+
+    monkeypatch.setattr(
+        "cysmutml.data.fireprotdb.urlopen",
+        lambda *_args, **_kwargs: Response(),
+    )
+    sequences, failed = download_fireprotdb_sequences(["17"])
+    assert sequences == {"17": "ACDEFG"}
+    assert failed == []
+
+
+def test_uniprot_sequence_download(monkeypatch):
+    class Response:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_):
+            return None
+
+        def read(self):
+            return b">sp|P12345|EXAMPLE\nACDE\nFG\n"
+
+    monkeypatch.setattr(
+        "cysmutml.data.fireprotdb.urlopen",
+        lambda *_args, **_kwargs: Response(),
+    )
+    sequences, failed = download_uniprot_sequences(["P12345"])
+    assert sequences == {"P12345": "ACDEFG"}
+    assert failed == []
 
 
 def test_structure_features():
@@ -180,6 +240,8 @@ def test_duplicate_aggregation_uses_median(tmp_path):
             "measure": ["CD", "CD", "CD"],
             "source_dataset": ["x", "x", "x"],
             "pdb_id": ["1abc", "1abc", "2abc"],
+            "canonical_sequence": ["ACDE", "ACDE", "KLMN"],
+            "fireprotdb_sequence_id": ["17", "17", "18"],
         }
     )
     input_csv = tmp_path / "processed.csv"
@@ -194,6 +256,8 @@ def test_duplicate_aggregation_uses_median(tmp_path):
     row = agg[agg["mutation"] == "A1C"].iloc[0]
     assert row["median_destabilization_ddg"] == 1.0
     assert row["n_measurements"] == 2
+    assert row["canonical_sequence"] == "ACDE"
+    assert str(row["fireprotdb_sequence_id"]) == "17"
 
 
 def test_structural_cv_folds_have_no_protein_overlap(tmp_path):
@@ -291,3 +355,138 @@ def test_local_lys_and_cys_environment_columns():
     assert "existing_cys_count_8A" in generated
     assert "existing_cys_count_10A" in generated
     assert (generated["lysine_radius_angstrom"] == 20.0).all()
+
+
+
+def test_homology_clusters_are_isolated_between_folds():
+    features = pd.DataFrame(
+        {
+            "protein_id": ["p1", "p2", "p3", "p4", "p5", "p6"],
+            "mutation": ["A1C"] * 6,
+        }
+    )
+    mapping = pd.DataFrame(
+        {
+            "protein_id": ["p1", "p2", "p3", "p4", "p5", "p6"],
+            "sequence_cluster": ["c1", "c1", "c2", "c2", "c3", "c3"],
+        }
+    )
+    attached = attach_sequence_clusters(features, mapping)
+    assignments = grouped_fold_assignments(attached, "sequence_cluster", n_splits=3)
+    protein_assignments = grouped_fold_assignments(attached, "protein_id", n_splits=3)
+    assert protein_assignments.groupby("protein_id")["fold"].nunique().eq(1).all()
+    assert assignments.groupby("sequence_cluster")["fold"].nunique().eq(1).all()
+    for fold in assignments["fold"].unique():
+        test_clusters = set(assignments.loc[assignments["fold"] == fold, "sequence_cluster"])
+        train_clusters = set(assignments.loc[assignments["fold"] != fold, "sequence_cluster"])
+        assert test_clusters.isdisjoint(train_clusters)
+
+
+def test_homology_mapping_fails_on_conflicts_and_missing_proteins():
+    conflicting = pd.DataFrame(
+        {
+            "protein_id": ["p1", "p1"],
+            "sequence_cluster": ["c1", "c2"],
+        }
+    )
+    with pytest.raises(ValueError, match="multiple clusters"):
+        validate_cluster_mapping(conflicting)
+
+    features = pd.DataFrame({"protein_id": ["p1", "p2"]})
+    incomplete = pd.DataFrame({"protein_id": ["p1"], "sequence_cluster": ["c1"]})
+    with pytest.raises(ValueError, match="does not cover"):
+        attach_sequence_clusters(features, incomplete)
+    partial = attach_sequence_clusters(features, incomplete, require_complete=False)
+    assert partial["protein_id"].tolist() == ["p1"]
+
+
+def test_sequence_group_metadata_never_becomes_a_model_feature():
+    table = pd.DataFrame(
+        {
+            "protein_id": ["p1", "p2"],
+            "sequence_cluster": ["c1", "c2"],
+            "representative_protein_id": ["p1", "p2"],
+            "fireprotdb_sequence_id": [17, 18],
+            "wt_aa": ["A", "K"],
+            "mut_aa": ["C", "C"],
+            "delta_mass": [1.0, 2.0],
+            "destabilization_ddg_kcal_mol": [0.1, 0.2],
+        }
+    )
+    numeric, categorical = feature_columns(table, include_structural=False)
+    assert numeric == ["delta_mass"]
+    assert categorical == ["wt_aa", "mut_aa"]
+
+
+def test_unique_sequences_resolve_variants_deterministically():
+    table = pd.DataFrame(
+        {
+            "protein_id": ["p1", "p1", "p1", "p2"],
+            "canonical_sequence": ["ACDE", "ACDF", "ACDE", "KLMN"],
+        }
+    )
+    selected = unique_protein_sequences(table)
+    p1 = selected[selected["protein_id"] == "p1"].iloc[0]
+    assert p1["canonical_sequence"] == "ACDE"
+    assert p1["sequence_variants"] == 2
+    assert p1["selected_sequence_records"] == 2
+
+
+
+def test_model_evaluation_accepts_homology_groups(tmp_path):
+    raw_path = tmp_path / "homology_eval_raw.csv"
+    rows = []
+    mutations = ["A1C", "K2A", "V3C"]
+    for protein_index in range(6):
+        for mutation_index, mutation in enumerate(mutations):
+            rows.append(
+                {
+                    "protein": f"p{protein_index + 1}",
+                    "mutation": mutation,
+                    "ddg": 0.2 * protein_index - 0.1 * mutation_index,
+                }
+            )
+    pd.DataFrame(rows).to_csv(raw_path, index=False)
+    feature_path = tmp_path / "homology_eval_features.csv"
+    features = build_feature_table(raw_path, feature_path)
+    cluster_by_protein = {
+        "p1": "c1",
+        "p2": "c1",
+        "p3": "c2",
+        "p4": "c2",
+        "p5": "c3",
+        "p6": "c3",
+    }
+    features["sequence_cluster"] = features["protein_id"].map(cluster_by_protein)
+    features.to_csv(feature_path, index=False)
+
+    metrics, predictions, _ = evaluate_models(
+        feature_path,
+        tmp_path / "homology_results",
+        include_structural=False,
+        model_names=["ridge"],
+        group_column="sequence_cluster",
+    )
+    assert set(metrics["group_column"]) == {"sequence_cluster"}
+    assert (metrics["fit_seconds"] >= 0).all()
+    assert (metrics["predict_seconds"] >= 0).all()
+    assert set(predictions["group_column"]) == {"sequence_cluster"}
+    assert predictions.groupby("group_id")["fold"].nunique().eq(1).all()
+
+
+
+def test_mvp_subset_is_deterministic_and_keeps_clusters_complete():
+    table = pd.DataFrame(
+        {
+            "protein_id": [f"p{index}" for index in range(1, 9)],
+            "sequence_cluster": ["c1", "c1", "c2", "c2", "c3", "c3", "c4", "c4"],
+        }
+    )
+    first = select_cluster_complete_subset(table, target_proteins=3, random_seed=42)
+    second = select_cluster_complete_subset(table, target_proteins=3, random_seed=42)
+    pd.testing.assert_frame_equal(first.reset_index(drop=True), second.reset_index(drop=True))
+    assert first["protein_id"].nunique() >= 3
+    for cluster in first["sequence_cluster"].unique():
+        expected = set(table.loc[table["sequence_cluster"] == cluster, "protein_id"])
+        observed = set(first.loc[first["sequence_cluster"] == cluster, "protein_id"])
+        assert observed == expected

@@ -10,6 +10,8 @@ Use physicochemical ML to predict mutation-associated destabilization and separa
 - Sign convention: larger positive values mean greater destabilization.
 - FireProtDB DDG is currently used directly because its docs define positive DDG as destabilizing.
 - Do not use random mutation-level splits as primary validation.
+- Do not report homology-clustered metrics unless the cluster mapping, thresholds, coverage, and fold strategy are recorded.
+- Never allow `sequence_cluster` or representative IDs into the model feature matrix.
 - Do not merge the ML stability model with the engineering ranking heuristic.
 - Do not add structural descriptors to the deployed ML model unless a future task explicitly changes the project scope and validates it leakage-safely.
 - Do not claim toy outputs as scientific results.
