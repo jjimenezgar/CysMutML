@@ -10,6 +10,7 @@ import tempfile
 from pathlib import Path
 
 import pandas as pd
+from sklearn.inspection import permutation_importance
 from sklearn.model_selection import GroupKFold
 
 VALID_AA = set("ACDEFGHIKLMNPQRSTVWYBXZJUO")
@@ -107,6 +108,8 @@ def select_cluster_complete_subset(
     table: pd.DataFrame,
     target_proteins: int,
     random_seed: int = 42,
+    permutation_sample_rows: int = 2000,
+    permutation_repeats: int = 3,
 ) -> pd.DataFrame:
     """Select whole sequence clusters until the target protein count is reached."""
     if target_proteins < 2:
@@ -279,6 +282,82 @@ def build_mmseqs_cluster_map(
             temporary.cleanup()
 
 
+def write_tree_permutation_importance(
+    table: pd.DataFrame,
+    group_column: str,
+    output_csv: str | Path,
+    model_names: list[str] | None = None,
+    config_path: str | Path = "configs/default.yaml",
+    sample_rows: int = 2000,
+    n_repeats: int = 3,
+    random_seed: int = 42,
+) -> pd.DataFrame:
+    """Measure held-out permutation importance for nonlinear tree models."""
+    from cysmutml.config import load_config
+    from cysmutml.features.build import feature_columns
+    from cysmutml.models.pipeline import make_regressors
+
+    numeric, categorical = feature_columns(table, include_structural=False)
+    X = table[numeric + categorical]
+    y = table["destabilization_ddg_kcal_mol"].astype(float)
+    groups = table[group_column].astype(str)
+    config = load_config(config_path)
+    splitter = GroupKFold(n_splits=min(int(config["cv_folds"]), groups.nunique()))
+    train_idx, test_idx = next(splitter.split(X, y, groups))
+    if len(test_idx) > sample_rows:
+        sampled = (
+            pd.Series(test_idx)
+            .sample(n=sample_rows, random_state=random_seed)
+            .to_numpy(dtype=int)
+        )
+    else:
+        sampled = test_idx
+
+    requested = model_names or ["random_forest", "hist_gradient_boosting"]
+    selected = [
+        name for name in requested if name in {"random_forest", "hist_gradient_boosting"}
+    ]
+    models = make_regressors(numeric, categorical, random_seed)
+    rows = []
+    for model_name in selected:
+        estimator = models[model_name]
+        estimator.fit(X.iloc[train_idx], y.iloc[train_idx])
+        result = permutation_importance(
+            estimator,
+            X.iloc[sampled],
+            y.iloc[sampled],
+            scoring="neg_mean_absolute_error",
+            n_repeats=n_repeats,
+            random_state=random_seed,
+            n_jobs=1,
+        )
+        for feature, mean, std in zip(
+            X.columns,
+            result.importances_mean,
+            result.importances_std,
+            strict=True,
+        ):
+            rows.append(
+                {
+                    "model": model_name,
+                    "group_column": group_column,
+                    "held_out_fold": 1,
+                    "evaluation_rows": int(len(sampled)),
+                    "feature": feature,
+                    "importance_mean_mae": float(mean),
+                    "importance_std_mae": float(std),
+                }
+            )
+
+    output = pd.DataFrame(rows).sort_values(
+        ["model", "importance_mean_mae"], ascending=[True, False]
+    )
+    output_csv = Path(output_csv)
+    output_csv.parent.mkdir(parents=True, exist_ok=True)
+    output.to_csv(output_csv, index=False)
+    return output
+
+
 def compare_grouping_strategies(
     feature_csv: str | Path,
     cluster_mapping_csv: str | Path,
@@ -327,6 +406,16 @@ def compare_grouping_strategies(
 
     combined = pd.concat(all_metrics, ignore_index=True)
     combined.to_csv(results_dir / "split_comparison_fold_metrics.csv", index=False)
+    write_tree_permutation_importance(
+        attached,
+        "sequence_cluster",
+        results_dir / "tree_permutation_importance.csv",
+        model_names=model_names,
+        config_path=config_path,
+        sample_rows=permutation_sample_rows,
+        n_repeats=permutation_repeats,
+        random_seed=random_seed,
+    )
     protein_folds = grouped_fold_assignments(attached, "protein_id", n_splits=3)
     homology_folds = grouped_fold_assignments(attached, "sequence_cluster", n_splits=3)
     manifest = attached[["protein_id", "sequence_cluster"]].drop_duplicates()
@@ -364,6 +453,8 @@ def compare_grouping_strategies(
         "target_proteins": target_proteins,
         "sampling_seed": random_seed,
         "sampling_unit": "complete_sequence_cluster",
+        "permutation_importance_rows": permutation_sample_rows,
+        "permutation_importance_repeats": permutation_repeats,
     }
     (results_dir / "cluster_audit.json").write_text(json.dumps(audit, indent=2))
     return summary
