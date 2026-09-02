@@ -385,7 +385,7 @@ def compare_grouping_strategies(
     from cysmutml.evaluation.metrics import regression_metrics
     from cysmutml.models.train import evaluate_models
 
-    features = pd.read_csv(feature_csv, low_memory=False)
+    features = pd.read_csv(feature_csv, low_memory=False, keep_default_na=False)
     mapping = pd.read_csv(cluster_mapping_csv, keep_default_na=False)
     source_proteins = set(features["protein_id"].astype(str))
     mapped_proteins = set(validate_cluster_mapping(mapping)["protein_id"])
