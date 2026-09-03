@@ -39,6 +39,8 @@ destabilization_ddg_kcal_mol
 
 Larger positive values indicate greater predicted destabilisation. Structural descriptors are not used by this model.
 
+CysMutML captures average physicochemical tendencies of substitutions, but it is not a position-specific mutational effect predictor.
+
 ## Homology-aware MVP
 
 A reduced benchmark was run on 150 proteins and 5,634 mutation rows. Sequences were clustered with MMseqs2 at 30% identity and 80% coverage. The experiment used seed 42, complete sequence clusters and three folds.
