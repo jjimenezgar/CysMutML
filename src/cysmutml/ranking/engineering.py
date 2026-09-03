@@ -204,7 +204,7 @@ def rank_predictions(
     )
     df["cys_suitability_score"] = df["final_engineering_score"]
     df["ranking_formula"] = (
-        "final_priority = 0.30*ml_stability + 0.25*relative_exposure + "
+        "final_priority = 0.30*ml_stability + 0.20*relative_exposure + "
         "0.20*flexibility + 0.10*nearby_lys_boost - 0.10*nearby_cys_penalty "
         "- 0.10*secondary_structure_penalty"
     )
