@@ -10,9 +10,8 @@ For each possible X→Cys substitution, the pipeline computes:
 - **Relative exposure**: relative SASA of the mutated residue in the input structure, clipped to [0, 1].
 - **Flexibility**: min–max scaling of the chain-normalized mean B-factor. Higher values identify locally more flexible positions.
 - **Nearby Lys boost**: a saturating function of exposed lysines within 20 Å.
-- **Nearby Cys penalty**: a penalty for proximity to existing cysteines. It is an engineering caution, not a prediction of disulfide formation.
-
-Protected residues can still be supplied through the CLI as an optional exclusion annotation. They are retained in exported files for traceability, but are not part of the default MVP score.
+- **Nearby Cys penalty**: a penalty for proximity to existing cysteines.
+- **Secondary-structure penalty**: a soft penalty for residues assigned by MDTraj/DSSP to an α-helix or β-sheet. Loops and unknown assignments are not penalized.
 
 ## Final score
 
@@ -21,16 +20,17 @@ The default weights are stored in `configs/default.yaml`:
 ```text
 final_priority =
     0.30 * ML stability
-  + 0.25 * relative exposure
-  + 0.25 * flexibility
+  + 0.20 * relative exposure
+  + 0.20 * flexibility
   + 0.10 * nearby Lys boost
   - 0.10 * nearby Cys penalty
+  - 0.10 * secondary-structure penalty
 ```
 
-Positive terms sum to 0.90; the remaining 0.10 is the maximum penalty contribution. The score is used only to order candidates.
+The score is used only to order candidates. A higher value means that the candidate is more attractive under these explicit assumptions.
 
 ## Interpretation
 
-The model contribution comes from FireProtDB. SASA and B-factor are calculated from the target structure. The lysine boost and cysteine penalty are simple structural heuristics. None of these terms proves that a mutation will improve immobilization, activity, reactivity or experimental yield.
+The model contribution comes from FireProtDB. SASA, B-factor and secondary structure are calculated from the target structure. The lysine boost and cysteine penalties are simple structural heuristics. The secondary-structure term is a soft prior, not evidence that every helix or sheet position is unsuitable. None of these terms proves that a mutation will improve immobilization, activity, reactivity or experimental yield.
 
 The CSV export retains the component columns so the final score can be reconstructed. The Streamlit app shows the main terms using user-facing labels and keeps implementation fields out of the default table.
