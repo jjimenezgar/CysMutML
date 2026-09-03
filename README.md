@@ -108,6 +108,7 @@ The ML model supplies a stability term for each possible X→Cys substitution. T
 
 - **Relative exposure (SASA):** solvent accessibility of the residue, normalised within the chain.
 - **Flexibility:** chain-normalised B-factor, used as a proxy for local mobility.
+- **Secondary-structure penalty:** soft penalty for residues in α-helices or β-sheets, assigned with MDTraj/DSSP.
 - **Nearby Lys boost:** rewards exposed lysines within the configured distance threshold.
 - **Existing Cys penalty:** reduces the score when nearby cysteines are already present.
 
@@ -115,13 +116,14 @@ The final engineering score is:
 
 ```text
 0.30 × ML stability
-+ 0.25 × relative SASA
-+ 0.25 × flexibility
++ 0.20 × relative SASA
++ 0.20 × flexibility
 + 0.10 × nearby Lys boost
 − 0.10 × existing Cys penalty
+− 0.10 × secondary-structure penalty
 ```
 
-Weights are configurable in `configs/default.yaml`. Protected residues can be supplied as an optional exclusion annotation, but are not part of the default MVP score. Implementation details are in [docs/RANKING_FORMULA.md](docs/RANKING_FORMULA.md). Scores are intended for ranking candidates, not as calibrated probabilities.
+Weights are configurable in `configs/default.yaml`. Secondary structure is assigned with MDTraj/DSSP; unknown assignments receive no penalty. Protected residues can be supplied as an optional exclusion annotation, but are not part of the default MVP score. Implementation details are in [docs/RANKING_FORMULA.md](docs/RANKING_FORMULA.md). Scores are intended for ranking candidates, not as calibrated probabilities.
 
 ## Reproducibility
 
