@@ -27,7 +27,7 @@ def _secondary_structure_map(pdb_path: str | Path) -> dict[tuple[str, str], str]
         import mdtraj as md
 
         trajectory = md.load(str(pdb_path))
-        dssp = trajectory.compute_dssp()[0]
+        dssp = md.compute_dssp(trajectory, simplified=False)[0]
         structure = parse_pdb(pdb_path)
         chain_ids = [chain.id for chain in next(structure.get_models())]
         output: dict[tuple[str, str], str] = {}
@@ -36,7 +36,7 @@ def _secondary_structure_map(pdb_path: str | Path) -> dict[tuple[str, str], str]
             chain_id = chain_ids[chain_index] if chain_index < len(chain_ids) else str(chain_index)
             output[(chain_id, str(residue.resSeq))] = str(code)
         return output
-    except (ImportError, OSError, ValueError, IndexError, RuntimeError):
+    except (AttributeError, ImportError, OSError, ValueError, IndexError, RuntimeError):
         # DSSP is an informative structural signal; an unavailable assignment
         # should not prevent the rest of the ranking from running.
         return {}
