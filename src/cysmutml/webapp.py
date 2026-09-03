@@ -24,6 +24,13 @@ MODEL_PATH = ROOT / "models" / "cysmutml_model.joblib"
 CONFIG_PATH = ROOT / "configs" / "default.yaml"
 BRAND_IMAGE = ROOT / "docs" / "figures" / "cysmutml_github_cover.jpg"
 
+AA_THREE_LETTER = {
+    "A": "ALA", "R": "ARG", "N": "ASN", "D": "ASP", "C": "CYS",
+    "Q": "GLN", "E": "GLU", "G": "GLY", "H": "HIS", "I": "ILE",
+    "L": "LEU", "K": "LYS", "M": "MET", "F": "PHE", "P": "PRO",
+    "S": "SER", "T": "THR", "W": "TRP", "Y": "TYR", "V": "VAL",
+}
+
 
 def apply_style() -> None:
     st.markdown(
@@ -167,12 +174,11 @@ def render_protein_viewer(
     structure_bytes: bytes,
     structure_format: str,
     chain: str,
-    ranking: pd.DataFrame,
-    top_n: int,
+    selected_mutations: list[str],
 ) -> None:
-    """Render a lightweight 3Dmol.js view with the selected candidates highlighted."""
+    """Render a lightweight 3Dmol.js view with selected residues highlighted."""
     residue_numbers = []
-    for mutation in ranking.head(top_n)["mutation"].astype(str):
+    for mutation in selected_mutations:
         match = re.search(r"(\d+)", mutation)
         if match:
             residue_numbers.append(int(match.group(1)))
@@ -479,21 +485,49 @@ def render_prediction() -> None:
 
     st.divider()
     st.subheader("3D structure view")
-    viewer_top_n = st.slider(
-        "Candidates highlighted",
-        min_value=1,
-        max_value=min(25, len(ranking)),
-        value=min(10, len(ranking)),
-        step=1,
-        help="Highlights the highest-priority candidates on the selected chain.",
+    st.caption("Filter candidates by their original amino acid, then choose the residues to highlight.")
+
+    aa_filter = st.selectbox(
+        "Original amino acid",
+        ["All amino acids"] + sorted(AA_THREE_LETTER.values()),
+        help="Optional filter applied to the candidate list below.",
     )
-    render_protein_viewer(
-        result["structure_bytes"],
-        result["structure_format"],
-        chain,
-        ranking,
-        viewer_top_n,
-    )
+    viewer_ranking = ranking.copy()
+    if aa_filter != "All amino acids":
+        selected_one_letter = next(
+            (code for code, three_letter in AA_THREE_LETTER.items() if three_letter == aa_filter),
+            None,
+        )
+        if selected_one_letter is not None and "wt_aa" in viewer_ranking:
+            viewer_ranking = viewer_ranking[viewer_ranking["wt_aa"] == selected_one_letter]
+
+    candidate_options = []
+    option_to_mutation = {}
+    for _, row in viewer_ranking.iterrows():
+        mutation = str(row.get("mutation", ""))
+        match = re.match(r"([A-Z])(\\d+.*)C$", mutation)
+        if not match:
+            continue
+        label = f"{AA_THREE_LETTER.get(match.group(1), match.group(1))} {match.group(2)} ({mutation})"
+        candidate_options.append(label)
+        option_to_mutation[label] = mutation
+
+    if not candidate_options:
+        st.info("No candidates match the selected amino-acid filter.")
+    else:
+        default_count = min(10, len(candidate_options))
+        selected_labels = st.multiselect(
+            "Residues to highlight",
+            options=candidate_options,
+            default=candidate_options[:default_count],
+            help="Choose one or more candidate residues to highlight in the 3D viewer.",
+        )
+        selected_mutations = [option_to_mutation[label] for label in selected_labels]
+        render_protein_viewer(
+            result["structure_bytes"],
+            result["structure_format"],
+            selected_mutations,
+        )
 
     warnings = result["warnings"]
     if warnings:
