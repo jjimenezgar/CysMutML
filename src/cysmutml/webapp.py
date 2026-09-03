@@ -217,8 +217,7 @@ def render_protein_viewer(
         scrolling=False,
     )
     st.caption(
-        f"Highlighted candidates: {', '.join(str(number) for number in residue_numbers)}. "
-        "Gold residues are the selected positions; red sticks show their local environment."
+        "Gold residues mark the selected top-ranked candidates; red sticks show their local environment."
     )
 
 
@@ -485,12 +484,21 @@ def render_prediction() -> None:
 
     st.divider()
     st.subheader("3D structure view")
-    st.caption("Filter candidates by their original amino acid, then choose the residues to highlight.")
+    st.caption("Choose the top percentile to show, then filter candidates by original amino acid.")
+
+    top_percentile = st.slider(
+        "Top candidates to display (%)",
+        min_value=1,
+        max_value=100,
+        value=20,
+        step=1,
+        help="Highlights the top percentile according to Final priority.",
+    )
 
     aa_filter = st.selectbox(
         "Original amino acid",
         ["All amino acids"] + sorted(AA_THREE_LETTER.values()),
-        help="Optional filter applied to the candidate list below.",
+        help="Optional filter applied before selecting the top percentile.",
     )
     viewer_ranking = ranking.copy()
     if aa_filter != "All amino acids":
@@ -501,28 +509,13 @@ def render_prediction() -> None:
         if selected_one_letter is not None and "wt_aa" in viewer_ranking:
             viewer_ranking = viewer_ranking[viewer_ranking["wt_aa"] == selected_one_letter]
 
-    candidate_options = []
-    option_to_mutation = {}
-    for _, row in viewer_ranking.iterrows():
-        mutation = str(row.get("mutation", ""))
-        match = re.match(r"([A-Z])(\d+.*)C$", mutation)
-        if not match:
-            continue
-        label = f"{AA_THREE_LETTER.get(match.group(1), match.group(1))} {match.group(2)} ({mutation})"
-        candidate_options.append(label)
-        option_to_mutation[label] = mutation
-
-    if not candidate_options:
+    if viewer_ranking.empty:
         st.info("No candidates match the selected amino-acid filter.")
     else:
-        default_count = min(10, len(candidate_options))
-        selected_labels = st.multiselect(
-            "Residues to highlight",
-            options=candidate_options,
-            default=candidate_options[:default_count],
-            help="Choose one or more candidate residues to highlight in the 3D viewer.",
+        count = max(1, round(len(viewer_ranking) * top_percentile / 100))
+        selected_mutations = (
+            viewer_ranking.nsmallest(count, "rank_engineering")["mutation"].astype(str).tolist()
         )
-        selected_mutations = [option_to_mutation[label] for label in selected_labels]
         render_protein_viewer(
             result["structure_bytes"],
             result["structure_format"],
