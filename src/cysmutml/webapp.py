@@ -153,6 +153,7 @@ def _humanize_ranking(ranking: pd.DataFrame) -> pd.DataFrame:
             "flexibility_score": "Flexibility",
             "lysine_boost": "Nearby Lys boost",
             "existing_cys_penalty": "Nearby Cys penalty",
+            "secondary_structure_penalty": "Structured-region penalty",
             "final_engineering_score": "Final priority",
         }
     )
@@ -456,6 +457,7 @@ def render_prediction() -> None:
             "sasa_score",
             "flexibility_score",
             "lysine_boost",
+            "secondary_structure_penalty",
             "final_engineering_score",
         ]
         if column in shown
@@ -467,6 +469,7 @@ def render_prediction() -> None:
                 "sasa_score": "Exposure",
                 "flexibility_score": "Flexibility",
                 "lysine_boost": "Lys boost",
+                "secondary_structure_penalty": "Structured region",
                 "final_engineering_score": "Final priority",
             }
         )
@@ -528,8 +531,9 @@ def render_methods() -> None:
 
         **Calculated from the target structure**
 
-        Relative exposure, B-factor-derived flexibility, local exposed-lysine context,
-        existing-cysteine context. Protected residues, when supplied, are kept as an optional exclusion annotation and do not change the default MVP score.
+        Relative exposure, B-factor-derived flexibility, secondary structure from MDTraj/DSSP,
+        local exposed-lysine context and existing-cysteine context. Protected residues, when supplied,
+        are kept as an optional exclusion annotation and do not change the default MVP score.
 
         **Interpretation**
 
