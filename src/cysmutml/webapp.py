@@ -448,7 +448,8 @@ def render_prediction() -> None:
         "Relative exposure is the residue's relative SASA. Flexibility comes from the "
         "local B-factor signal. Nearby Lys boost rewards accessible lysines within the "
         "configured radius. Nearby Cys penalty discourages candidates close to existing "
-        "cysteines. Final priority is the weighted sum of these signals, not a probability."
+        "cysteines. Secondary-structure penalty is 1 for helix or beta sheet and 0 for "
+        "loop or unknown. Final priority is the weighted sum of these signals, not a probability."
     )
 
     chart_columns = [
