@@ -343,8 +343,8 @@ def test_ranking_score_reconstruction_and_penalties(tmp_path):
     )
     final = (
         0.30 * first["stability_score"]
-        + 0.25 * first["sasa_score"]
-        + 0.25 * first["flexibility_score"]
+        + 0.20 * first["sasa_score"]
+        + 0.20 * first["flexibility_score"]
         + 0.10 * first["lysine_boost"]
         - 0.10 * first["existing_cys_penalty"]
         - 0.10 * first["secondary_structure_penalty"]
