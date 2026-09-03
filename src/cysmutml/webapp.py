@@ -226,8 +226,14 @@ def render_overview() -> None:
         unsafe_allow_html=True,
     )
     st.write(
-        "CysMutML estimates mutation-associated destabilisation from FireProtDB and "
-        "combines that signal with transparent, structure-derived ranking components."
+        "CysMutML helps design cysteine substitutions as site-specific handles for covalent "
+        "enzyme immobilization. It combines a stability model with transparent structural ranking."
+    )
+    st.caption(
+        "The tool does not model immobilization chemistry itself. It prioritizes sites predicted "
+        "to preserve stability while remaining accessible. Nearby exposed lysines provide context "
+        "for possible multipoint attachment, while nearby native cysteines are penalized because "
+        "they can create competing thiol sites or unwanted disulfide interactions."
     )
     first, second, third, fourth = st.columns(4)
     first.metric("Training rows", "352,005")
