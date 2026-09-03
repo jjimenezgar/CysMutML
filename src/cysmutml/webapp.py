@@ -138,6 +138,7 @@ def _humanize_ranking(ranking: pd.DataFrame) -> pd.DataFrame:
         "flexibility_score",
         "lysine_boost",
         "existing_cys_penalty",
+        "secondary_structure_penalty",
         "final_engineering_score",
     ]
     available = [column for column in columns if column in ranking.columns]
