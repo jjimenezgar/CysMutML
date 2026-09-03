@@ -3,14 +3,14 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-3776AB.svg)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-CysMutML is a small, interpretable pipeline for prioritising cysteine substitutions in proteins.
+CysMutML is an interpretable ML and structural-ranking pipeline for designing cysteine substitutions as site-specific handles for enzyme immobilization.
 
 It combines two separate signals:
 
 1. a physicochemical ML model trained on FireProtDB mutation data;
 2. structural information from a target PDB structure.
 
-The model estimates mutation-associated destabilisation. The structural layer then ranks candidates with a transparent engineering score. The result is a prioritisation heuristic, not a probability of experimental success.
+CysMutML does not model the immobilization chemistry itself; it prioritizes mutation sites that are predicted to preserve stability while remaining structurally accessible. The result is a design hypothesis, not a probability of immobilization success.
 
 ![CysMutML](docs/figures/cysmutml_github_cover.jpg)
 
