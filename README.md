@@ -104,7 +104,7 @@ cysmutml compare-grouping-strategies \
 
 ## How the ranking is constructed
 
-The ML model supplies a stability term for each possible X→Cys substitution. The structure supplies four simple, interpretable signals:
+The ML model supplies a stability term for each possible X→Cys substitution. The structure supplies five simple, interpretable signals:
 
 - **Relative exposure (SASA):** solvent accessibility of the residue, normalised within the chain.
 - **Flexibility:** chain-normalised B-factor, used as a proxy for local mobility.
