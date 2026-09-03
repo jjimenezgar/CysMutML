@@ -526,6 +526,7 @@ def render_prediction() -> None:
         render_protein_viewer(
             result["structure_bytes"],
             result["structure_format"],
+            chain,
             selected_mutations,
         )
 
