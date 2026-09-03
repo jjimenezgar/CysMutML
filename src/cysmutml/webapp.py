@@ -505,7 +505,7 @@ def render_prediction() -> None:
     option_to_mutation = {}
     for _, row in viewer_ranking.iterrows():
         mutation = str(row.get("mutation", ""))
-        match = re.match(r"([A-Z])(\\d+.*)C$", mutation)
+        match = re.match(r"([A-Z])(\d+.*)C$", mutation)
         if not match:
             continue
         label = f"{AA_THREE_LETTER.get(match.group(1), match.group(1))} {match.group(2)} ({mutation})"
