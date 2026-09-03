@@ -221,6 +221,7 @@ def test_inference_generation_and_ranking(tmp_path):
     assert "stability_component" in predictions
     assert "accessibility_component" in ranked
     assert "flexibility_component" in ranked
+    assert "secondary_structure_penalty" in ranked
     assert "local_exposed_lys_count" in predictions
     assert "nearest_existing_cys_distance" in predictions
 
@@ -346,6 +347,7 @@ def test_ranking_score_reconstruction_and_penalties(tmp_path):
         + 0.25 * first["flexibility_score"]
         + 0.10 * first["lysine_boost"]
         - 0.10 * first["existing_cys_penalty"]
+        - 0.10 * first["secondary_structure_penalty"]
     )
     assert abs(first["cys_site_suitability"] - site) < 1e-9
     assert abs(first["rigidification_potential"] - rigidification) < 1e-9
