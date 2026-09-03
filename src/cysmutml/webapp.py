@@ -565,6 +565,8 @@ def render_methods() -> None:
 
         The deployed Ridge model uses physicochemical mutation descriptors, mutation
         deltas and BLOSUM62. It estimates mutation-associated destabilisation.
+        CysMutML captures average physicochemical tendencies of substitutions, but it is
+        not a position-specific mutational effect predictor.
 
         **Calculated from the target structure**
 
