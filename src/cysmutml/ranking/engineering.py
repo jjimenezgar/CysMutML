@@ -163,14 +163,20 @@ def rank_predictions(
     df["sasa_score"] = df["accessibility_component"]
     df["flexibility_score"] = df["flexibility_component"]
     df["lysine_boost"] = df["lysine_environment_component"]
+    df["secondary_structure_penalty"] = _series_or_default(
+        df, "secondary_structure_penalty", default=0.0
+    ).clip(lower=0.0, upper=1.0)
 
     ranking_weights = {
         "stability": float(ranking_config.get("score_weights", {}).get("stability", 0.30)),
-        "sasa": float(ranking_config.get("score_weights", {}).get("sasa", 0.25)),
-        "flexibility": float(ranking_config.get("score_weights", {}).get("flexibility", 0.25)),
+        "sasa": float(ranking_config.get("score_weights", {}).get("sasa", 0.20)),
+        "flexibility": float(ranking_config.get("score_weights", {}).get("flexibility", 0.20)),
         "lysine_boost": float(ranking_config.get("score_weights", {}).get("lysine_boost", 0.10)),
         "existing_cys_penalty": float(
             ranking_config.get("score_weights", {}).get("existing_cys_penalty", 0.10)
+        ),
+        "secondary_structure_penalty": float(
+            ranking_config.get("score_weights", {}).get("secondary_structure_penalty", 0.10)
         ),
     }
     df["final_engineering_score"] = (
@@ -179,6 +185,7 @@ def rank_predictions(
         + ranking_weights["flexibility"] * df["flexibility_score"]
         + ranking_weights["lysine_boost"] * df["lysine_boost"]
         - ranking_weights["existing_cys_penalty"] * df["existing_cys_penalty"]
+        - ranking_weights["secondary_structure_penalty"] * df["secondary_structure_penalty"]
     )
 
     # Backward-compatible aliases for exported CSV consumers.
@@ -198,7 +205,8 @@ def rank_predictions(
     df["cys_suitability_score"] = df["final_engineering_score"]
     df["ranking_formula"] = (
         "final_priority = 0.30*ml_stability + 0.25*relative_exposure + "
-        "0.25*flexibility + 0.10*nearby_lys_boost - 0.10*nearby_cys_penalty"
+        "0.20*flexibility + 0.10*nearby_lys_boost - 0.10*nearby_cys_penalty "
+        "- 0.10*secondary_structure_penalty"
     )
 
     df = df.sort_values(
