@@ -74,7 +74,7 @@ The app supports:
 - automatic structure retrieval from RCSB and UniProt/AlphaFold fallback;
 - X→Cys predictions for a selected chain;
 - a ranked table with readable component names and short explanations;
-- an interactive 3D structure viewer with amino-acid filtering and residue selectors;
+- an interactive 3D structure viewer with top-percentile and amino-acid filters;
 - CSV, score-encoded PDB and PyMOL downloads;
 - benchmark, methods and limitations summaries.
 
