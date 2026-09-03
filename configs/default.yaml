@@ -15,10 +15,11 @@ ranking:
   # Weights for the single transparent engineering score.
   score_weights:
     stability: 0.30
-    sasa: 0.25
-    flexibility: 0.25
+    sasa: 0.20
+    flexibility: 0.20
     lysine_boost: 0.10
     existing_cys_penalty: 0.10
+    secondary_structure_penalty: 0.10
   stability_reference_ddg_low: -1.0
   stability_reference_ddg_high: 2.0
 lysine_environment:
