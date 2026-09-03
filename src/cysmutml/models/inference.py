@@ -21,6 +21,32 @@ from cysmutml.structures.features import (
 from cysmutml.structures.io import get_chain, parse_pdb
 
 
+def _secondary_structure_map(pdb_path: str | Path) -> dict[tuple[str, str], str]:
+    """Return DSSP secondary-structure codes keyed by (chain ID, residue number)."""
+    try:
+        import mdtraj as md
+
+        trajectory = md.load(str(pdb_path))
+        dssp = trajectory.compute_dssp()[0]
+        structure = parse_pdb(pdb_path)
+        chain_ids = [chain.id for chain in next(structure.get_models())]
+        output: dict[tuple[str, str], str] = {}
+        for residue, code in zip(trajectory.topology.residues, dssp):
+            chain_index = residue.chain.index
+            chain_id = chain_ids[chain_index] if chain_index < len(chain_ids) else str(chain_index)
+            output[(chain_id, str(residue.resSeq))] = str(code)
+        return output
+    except (ImportError, OSError, ValueError, IndexError, RuntimeError):
+        # DSSP is an informative structural signal; an unavailable assignment
+        # should not prevent the rest of the ranking from running.
+        return {}
+
+
+def _secondary_structure_penalty(code: str) -> float:
+    """Penalize residues assigned to helices or beta sheets, not loops."""
+    return 1.0 if code in {"H", "B", "E", "G", "I"} else 0.0
+
+
 def _parse_protected_residues(protected_residues: str | None) -> set[tuple[str, str]]:
     if not protected_residues:
         return set()
@@ -58,6 +84,7 @@ def _chain_structural_feature_map(
     residues,
     chain_id: str,
     sasa_by_residue: dict[tuple[str, str], float],
+    secondary_structure_by_residue: dict[tuple[str, str], str] | None = None,
 ) -> dict[str, dict[str, float | int | str]]:
     ca_coords = {residue_key(res): ca_coord(res) for res in residues if ca_coord(res) is not None}
     all_ca = np.asarray(list(ca_coords.values()), dtype=float)
@@ -96,7 +123,9 @@ def _chain_structural_feature_map(
             "normalized_b_factor": (residue_b - chain_b_mean) / chain_b_std
             if chain_b_std > 0
             else 0.0,
-            "secondary_structure": "unknown",
+            "secondary_structure": (secondary_structure_by_residue or {}).get(
+                (chain_id, key), "unknown"
+            ),
             "ca_neighbors_6a": int(np.sum(distances <= 6.0)) if len(distances) else 0,
             "ca_neighbors_8a": int(np.sum(distances <= 8.0)) if len(distances) else 0,
             "ca_neighbors_10a": int(np.sum(distances <= 10.0)) if len(distances) else 0,
@@ -136,7 +165,10 @@ def generate_cys_feature_rows(
         for residue in chain_residues(other_chain)
     ]
     sasa_by_residue = compute_sasa_by_residue(pdb_path)
-    structural_by_residue = _chain_structural_feature_map(residues, chain_id, sasa_by_residue)
+    secondary_structure_by_residue = _secondary_structure_map(pdb_path)
+    structural_by_residue = _chain_structural_feature_map(
+        residues, chain_id, sasa_by_residue, secondary_structure_by_residue
+    )
     existing_cys_entries = [
         (other_chain_id, residue, ca_coord(residue))
         for other_chain_id, residue in all_residues
@@ -220,6 +252,9 @@ def generate_cys_feature_rows(
                 "distance_to_nearest_protected": distance_to_nearest_protected,
                 **physchem,
                 **structural,
+                "secondary_structure_penalty": _secondary_structure_penalty(
+                    str(structural.get("secondary_structure", "unknown"))
+                ),
                 **{
                     f"existing_cys_count_{int(radius)}A": int(
                         sum(distance <= radius for distance in cys_distances)
