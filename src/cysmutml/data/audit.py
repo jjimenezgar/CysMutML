@@ -56,7 +56,9 @@ def validate_aggregation_identity(df: pd.DataFrame, key: list[str]) -> None:
         ).transform("all")
         proven |= complete
     if (anonymous & ~proven).any():
-        raise ValueError("Anonymous duplicate measurements lack shared identity; aggregation aborted")
+        raise ValueError(
+            "Anonymous duplicate measurements lack shared identity; aggregation aborted"
+        )
 
 
 def audit_duplicates_and_aggregate(
