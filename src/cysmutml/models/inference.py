@@ -31,7 +31,7 @@ def _secondary_structure_map(pdb_path: str | Path) -> dict[tuple[str, str], str]
         structure = parse_pdb(pdb_path)
         chain_ids = [chain.id for chain in next(structure.get_models())]
         output: dict[tuple[str, str], str] = {}
-        for residue, code in zip(trajectory.topology.residues, dssp):
+        for residue, code in zip(trajectory.topology.residues, dssp, strict=True):
             chain_index = residue.chain.index
             chain_id = chain_ids[chain_index] if chain_index < len(chain_ids) else str(chain_index)
             output[(chain_id, str(residue.resSeq))] = str(code)
