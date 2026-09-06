@@ -139,7 +139,6 @@ def generate_cys_feature_rows(
     protected_residues: str | None = None,
     config_path: str | Path = "configs/default.yaml",
     monocysteine_design: bool = False,
-    structure_origin: str | None = None,
 ) -> pd.DataFrame:
     config = load_config(config_path)
     lys_config = config.get("lysine_environment", {})
@@ -300,6 +299,7 @@ def predict_cys_mutations(
     protected_residues: str | None = None,
     config_path: str | Path = "configs/default.yaml",
     monocysteine_design: bool = False,
+    structure_origin: str | None = None,
 ) -> tuple[pd.DataFrame, list[str]]:
     config = load_config(config_path)
     model_path = Path(model_path)
