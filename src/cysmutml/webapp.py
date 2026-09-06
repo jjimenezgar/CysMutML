@@ -434,7 +434,11 @@ def render_prediction() -> None:
         chain = st.selectbox("Chain", chains, key="prediction_chain")
         if st.button("Run prediction", type="primary"):
             with st.spinner("Running the stability model and structural ranking..."):
-                origin = (\n                    "alphafold" if str(source_label).startswith("AF-") else "experimental_or_uploaded"\n                )
+                origin = (
+                    "alphafold"
+                    if str(source_label).startswith("AF-")
+                    else "experimental_or_uploaded"
+                )
                 st.session_state["prediction"] = _run_prediction(pdb_path, chain, origin)
                 st.session_state["prediction_source"] = source_label
     except Exception as error:
