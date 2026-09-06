@@ -1,0 +1,71 @@
+name: Audited retraining
+
+on:
+  push:
+    branches:
+      - fix/audit-corrections
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  retrain:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install package
+        run: python -m pip install --upgrade pip && python -m pip install -e ".[dev]"
+
+      - name: Download and normalize FireProtDB
+        run: |
+          cysmutml prepare-data \
+            --download-fireprotdb \
+            --raw data/raw/fireprotdb.csv \
+            --output data/processed/fireprotdb_mutations.csv
+
+      - name: Aggregate duplicate measurements
+        run: |
+          cysmutml audit-data \
+            --processed data/processed/fireprotdb_mutations.csv \
+            --raw data/raw/fireprotdb.csv
+
+      - name: Build corrected features
+        run: |
+          cysmutml build-features \
+            --input data/processed/fireprotdb_mutations_aggregated.csv \
+            --output data/processed/fireprotdb_aggregated_features.csv
+
+      - name: Compare corrected physicochemical models
+        run: |
+          cysmutml compare-physchem \
+            --features data/processed/fireprotdb_aggregated_features.csv \
+            --results-dir results/physchem_model_comparison
+
+      - name: Train corrected deployed Ridge model
+        run: |
+          cysmutml train \
+            --features data/processed/fireprotdb_aggregated_features.csv \
+            --model-output models/cysmutml_model.joblib \
+            --metadata-output models/model_metadata.json \
+            --model-name ridge
+
+      - name: Upload corrected model and benchmarks
+        uses: actions/upload-artifact@v4
+        with:
+          name: cysmutml-audited-retraining
+          retention-days: 14
+          path: |
+            models/cysmutml_model.joblib
+            models/model_metadata.json
+            results/physchem_model_comparison/
+            reports/
+            data/processed/fireprotdb_mutations_aggregated.csv
+            data/processed/fireprotdb_aggregated_features.csv
