@@ -344,7 +344,7 @@ def render_benchmark() -> None:
     )
 
 
-def _run_prediction(pdb_path: Path, chain: str) -> dict[str, object]:
+def _run_prediction(pdb_path: Path, chain: str, structure_origin: str | None = None) -> dict[str, object]:
     with tempfile.TemporaryDirectory(prefix="cysmutml_app_") as temporary:
         output_dir = Path(temporary)
         _, warnings = predict_cys_mutations(
@@ -353,6 +353,7 @@ def _run_prediction(pdb_path: Path, chain: str) -> dict[str, object]:
             MODEL_PATH,
             output_dir,
             config_path=CONFIG_PATH,
+            structure_origin=structure_origin,
         )
         ranking_path = output_dir / "residue_ranking.csv"
         ranking = rank_predictions(
@@ -427,7 +428,8 @@ def render_prediction() -> None:
         chain = st.selectbox("Chain", chains, key="prediction_chain")
         if st.button("Run prediction", type="primary"):
             with st.spinner("Running the stability model and structural ranking..."):
-                st.session_state["prediction"] = _run_prediction(pdb_path, chain)
+                origin = "alphafold" if str(source_label).startswith("AF-") else "experimental_or_uploaded"
+                st.session_state["prediction"] = _run_prediction(pdb_path, chain, origin)
                 st.session_state["prediction_source"] = source_label
     except Exception as error:
         st.error(f"Could not process this structure: {error}")
