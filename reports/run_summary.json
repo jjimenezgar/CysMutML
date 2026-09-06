@@ -346,5 +346,19 @@
       "homology_clustered": 1.63
     },
     "artifacts": "results/homology_validation/"
+  },
+  "benchmark_synchronization": {
+    "run_id": 34040897260,
+    "training_rows": 351487,
+    "evaluation_groups": 543,
+    "cys_rows": 16208,
+    "model_retrained": false,
+    "missing_name_audit": {
+      "measurements": 16,
+      "aggregated_mutations": 10,
+      "uniprot_identities": 6,
+      "cross_protein_collisions_found": 0
+    },
+    "historical_homology_not_regenerated": true
   }
 }

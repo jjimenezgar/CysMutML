@@ -27,6 +27,40 @@ def _joined_unique(values: pd.Series, limit: int = 12) -> str:
     return "; ".join(unique)
 
 
+def validate_aggregation_identity(df: pd.DataFrame, key: list[str]) -> None:
+    """Fail before aggregation if a mutation group has conflicting identities.
+
+    This guard preserves existing valid groups; it never guesses an identity or
+    silently chooses the first sequence when distinct proteins collide.
+    """
+    repeated = df.loc[df.duplicated(key, keep=False)].copy()
+    if repeated.empty:
+        return
+    identifiers = [
+        col for col in ("canonical_sequence", "fireprotdb_sequence_id", "uniprot_id")
+        if col in repeated
+    ]
+    for col in identifiers:
+        repeated[col] = repeated[col].astype("string").str.strip().replace("", pd.NA)
+        counts = repeated.groupby(key, dropna=False)[col].nunique()
+        if counts.gt(1).any():
+            raise ValueError(f"Conflicting protein identities in {col}; aggregation aborted")
+    anonymous = repeated["protein_id"].isna() | repeated["protein_id"].astype(
+        "string"
+    ).str.strip().isin(["", "unknown", "nan", "None"])
+    # Every anonymous measurement must have an identifier shared by its group.
+    proven = pd.Series(False, index=repeated.index)
+    for col in identifiers:
+        complete = repeated[col].notna().groupby(
+            [repeated[k] for k in key], dropna=False
+        ).transform("all")
+        proven |= complete
+    if (anonymous & ~proven).any():
+        raise ValueError(
+            "Anonymous duplicate measurements lack shared identity; aggregation aborted"
+        )
+
+
 def audit_duplicates_and_aggregate(
     processed_csv: str | Path = "data/processed/fireprotdb_mutations.csv",
     duplicate_audit_csv: str | Path = "reports/duplicate_measurement_audit.csv",
@@ -35,6 +69,7 @@ def audit_duplicates_and_aggregate(
 ) -> dict[str, int]:
     df = pd.read_csv(processed_csv, low_memory=False)
     key = ["protein_id", "wt_aa", "position", "mut_aa"]
+    validate_aggregation_identity(df, key)
     df["destabilization_ddg_kcal_mol"] = df["destabilization_ddg_kcal_mol"].astype(float)
     grouped = df.groupby(key, dropna=False)
     aggregation = {

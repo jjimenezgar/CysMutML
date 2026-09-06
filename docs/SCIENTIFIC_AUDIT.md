@@ -227,3 +227,8 @@ heterogeneous. It is evidence of validation design, not a state-of-the-art claim
 The benchmark also records fit/predict runtime, Ridge interpretability via
 coefficients, and held-out permutation importance for the tree models. Cluster IDs,
 representative IDs, and sequence provenance IDs are excluded from model features.
+
+
+## Benchmark synchronization — 6 September 2026
+
+The deployed Ridge model is unchanged. Full physicochemical metrics now match successful Actions run 34040897260 (training source commit 9b8613b868a333a5f6eda35b47575b19bec7c58b). Training: 351,487 aggregated rows; 543 evaluation groups; 16,208 X-to-Cys rows. Missing-name audit: 16 measurements formed 10 mutations across six UniProt identities; no cross-protein collision was found in those groups. A pre-aggregation identity guard now rejects conflicting identifiers and unresolved anonymous duplicates. No new training was required. Historical homology and invalid BTL2 results must not be interpreted as validation of the corrected model.

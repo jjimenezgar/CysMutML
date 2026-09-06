@@ -31,7 +31,7 @@ CysMutML does not model the immobilization chemistry itself; it prioritizes muta
 
 The deployed model is a Ridge regressor using amino-acid physicochemical descriptors, mutation deltas and BLOSUM62 features.
 
-It was trained on 352,005 median-aggregated FireProtDB rows from 542 proteins. The target is:
+It was trained on 351,487 median-aggregated FireProtDB rows from 543 evaluation groups. The target is:
 
 ```text
 destabilization_ddg_kcal_mol
@@ -41,7 +41,7 @@ Larger positive values indicate greater predicted destabilisation. Structural de
 
 CysMutML captures average physicochemical tendencies of substitutions, but it is not a position-specific mutational effect predictor.
 
-## Homology-aware MVP
+## Homology-aware MVP (historical, pre-audit)
 
 A reduced benchmark was run on 150 proteins and 5,634 mutation rows. Sequences were clustered with MMseqs2 at 30% identity and 80% coverage. The experiment used seed 42, complete sequence clusters and three folds.
 
@@ -155,4 +155,6 @@ CysMutML does not predict immobilisation yield, retained activity, cysteine reac
 
 The repository also contains an exploratory structure-trained ablation under `results/structural_ablation/`. It is retained for transparency but is not part of the deployed pipeline.
 
-The current audit branch also corrects the canonical BLOSUM62 descriptor, rejects composite mutation labels during ingestion, and distinguishes AlphaFold pLDDT from experimental B-factors. Results that depend on the previous descriptor table or the pre-audit Godoy residue joins must be regenerated before being used as validation evidence.
+The deployed model was retrained on 6 September 2026 (Actions run 34040897260). Versioned full-dataset metrics match that run. The historical homology benchmark has not been regenerated and does not evaluate the corrected model.
+
+The audit corrects the canonical BLOSUM62 descriptor, rejects composite mutation labels during ingestion, and distinguishes AlphaFold pLDDT from experimental B-factors. Results that depend on the previous descriptor table or the pre-audit Godoy residue joins must be regenerated before being used as validation evidence.

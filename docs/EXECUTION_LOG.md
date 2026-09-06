@@ -295,3 +295,8 @@ Command: `.venv/bin/pytest -q` and `.venv/bin/ruff check .`
 Purpose: Verify sequence acquisition, leakage guards, model evaluation, and Streamlit integration.
 Result: 24 tests passed; Ruff passed in the GitHub Actions Python 3.10/3.12 matrix. Streamlit health probe passed.
 Status: EXECUTED AND VERIFIED
+
+
+## Benchmark synchronization — 6 September 2026
+
+The deployed Ridge model is unchanged. Full physicochemical metrics now match successful Actions run 34040897260 (training source commit 9b8613b868a333a5f6eda35b47575b19bec7c58b). Training: 351,487 aggregated rows; 543 evaluation groups; 16,208 X-to-Cys rows. Missing-name audit: 16 measurements formed 10 mutations across six UniProt identities; no cross-protein collision was found in those groups. A pre-aggregation identity guard now rejects conflicting identifiers and unresolved anonymous duplicates. No new training was required. Historical homology and invalid BTL2 results must not be interpreted as validation of the corrected model.
