@@ -14,8 +14,8 @@ CysMutML does not model the immobilization chemistry itself; it prioritizes muta
 
 ![CysMutML](docs/figures/cysmutml_github_cover.jpg)
 
-[![Tests](https://img.shields.io/badge/tests-24%20passed-2ea44f?style=for-the-badge&logo=pytest&logoColor=white)](https://github.com/jjimenezgar/CysMutML/actions)
-[![CI](https://img.shields.io/badge/CI-passing-2ea44f?style=for-the-badge&logo=githubactions&logoColor=white)](https://github.com/jjimenezgar/CysMutML/actions)
+[![CI](https://github.com/jjimenezgar/CysMutML/actions/workflows/ci.yml/badge.svg)](https://github.com/jjimenezgar/CysMutML/actions/workflows/ci.yml)
+[![Tests](https://img.shields.io/badge/tests-run%20in%20CI-2ea44f?style=for-the-badge&logo=pytest&logoColor=white)](https://github.com/jjimenezgar/CysMutML/actions/workflows/ci.yml)
 [![Launch Streamlit](https://img.shields.io/badge/Launch%20Streamlit-2ea44f?style=for-the-badge&logo=streamlit&logoColor=white)](https://cysmutml.streamlit.app)
 
 ## What the project demonstrates
@@ -54,9 +54,9 @@ Mean MAE, lower is better. On the X→Cys subset, Ridge scored 1.535 with protei
 
 **How to read the splits.** `Protein grouped` keeps every mutation from a protein in one fold, so test proteins are unseen during training. `Homology clustered` first groups similar sequences with MMseqs2 and keeps each whole cluster in one fold; it is a stricter test against residual sequence relatedness.
 
-This is a small portfolio benchmark, not a state-of-the-art claim. The full fold metrics, timing measurements, sampling audit and permutation importance are in [docs/HOMOLOGY_VALIDATION.md](docs/HOMOLOGY_VALIDATION.md).
+This is a small portfolio benchmark, not a state-of-the-art claim. The full fold metrics, timing measurements, sampling audit and permutation importance are in [docs/HOMOLOGY_VALIDATION.md](docs/HOMOLOGY_VALIDATION.md). The X→Cys subset is reported separately because it is the downstream use case.
 
-**What the results say.** The learned models improve on the mean baseline, but the explained variance is modest. Gradient boosting is slightly better than Ridge in this benchmark; Ridge remains deployed for its simplicity and interpretability. The increase in error under homology clustering is an explicit warning about generalisation to related proteins.
+**What the results say.** On the full physicochemical benchmark, Ridge and gradient boosting improve on the mean baseline. On the reduced homology-aware MVP, the mean baseline is slightly better than every learned model, especially for X→Cys. This is an explicit negative result: the current descriptors do not generalise reliably to unseen proteins in that subset. Ridge remains deployed for its simplicity and interpretability, not because it wins every split.
 
 ## Streamlit app
 
@@ -154,3 +154,5 @@ GitHub Actions also runs the Python 3.10/3.12 test matrix, package build, portfo
 CysMutML does not predict immobilisation yield, retained activity, cysteine reactivity, disulfide formation or experimental success. FireProtDB measurements are heterogeneous, B-factors are only a rigidity proxy, and the ranking weights have not been experimentally calibrated.
 
 The repository also contains an exploratory structure-trained ablation under `results/structural_ablation/`. It is retained for transparency but is not part of the deployed pipeline.
+
+The current audit branch also corrects the canonical BLOSUM62 descriptor, rejects composite mutation labels during ingestion, and distinguishes AlphaFold pLDDT from experimental B-factors. Results that depend on the previous descriptor table or the pre-audit Godoy residue joins must be regenerated before being used as validation evidence.
