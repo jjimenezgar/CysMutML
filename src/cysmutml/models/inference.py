@@ -139,6 +139,7 @@ def generate_cys_feature_rows(
     protected_residues: str | None = None,
     config_path: str | Path = "configs/default.yaml",
     monocysteine_design: bool = False,
+    structure_origin: str | None = None,
 ) -> pd.DataFrame:
     config = load_config(config_path)
     lys_config = config.get("lysine_environment", {})
@@ -338,6 +339,13 @@ def predict_cys_mutations(
         out["local_flexibility_proxy"] = np.nan
         out["flexibility_value"] = np.nan
         out["flexibility_method"] = "UNAVAILABLE"
+
+    # AlphaFold stores pLDDT confidence in the PDB B-factor field. It is not an
+    # experimental mobility measurement, so never use it as a flexibility proxy.
+    if structure_origin == "alphafold":
+        out["local_flexibility_proxy"] = np.nan
+        out["flexibility_value"] = np.nan
+        out["flexibility_method"] = "PLDDT_CONFIDENCE_NOT_FLEXIBILITY"
     out = out.sort_values("predicted_destabilization_ddg", ascending=True).reset_index(drop=True)
     out.insert(0, "rank_ml", range(1, len(out) + 1))
     warnings = out_of_domain_warnings(
