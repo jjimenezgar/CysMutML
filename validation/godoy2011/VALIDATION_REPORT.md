@@ -201,3 +201,10 @@ Figures:
 ## Scientific Bottom Line
 
 CysMutML v1.1 is scientifically more defensible than the previous single-score heuristic because it separates mutation tolerance, Cys-site suitability, and rigidification potential. The Godoy retrospective validation provides partial support for accessibility and local Lys environment as useful ranking components, but it does not validate the final score as an optimized predictor of immobilization success. The results should be presented as a transparent retrospective audit, not as a calibrated benchmark.
+
+
+## Audit status (September 2026)
+
+A later repository audit identified residue-identity mismatches in the committed BTL2 join used to build the tables above. The following rows were labelled as matched but were joined to a different wild-type residue in the prediction CSV: Q39C/E39C, T93C/R93C, V187C/A187C, S195C/A195C, S236C/T236C, and T342C/G342C. S333C also requires an insertion-code and neighbouring-residue review.
+
+Until these correspondences are rebuilt from the experimental numbering, chain, sequence context and insertion codes, the BTL2 correlations, percentiles and top-k enrichment in this report are **invalid as validation evidence**. The files are retained as historical artifacts for traceability. A regenerated report must exclude unresolved mappings and record the exact PDB residue used for every accepted row.

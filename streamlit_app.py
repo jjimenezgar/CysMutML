@@ -1,7 +1,7 @@
 """Entry point for the CysMutML Streamlit application."""
 
-from pathlib import Path
 import sys
+from pathlib import Path
 
 # Streamlit Cloud runs this root-level file directly. The package uses the
 # standard src layout, so make that package root explicit for Cloud and local launches.

@@ -104,3 +104,8 @@ The repository contains:
 - a CI workflow for lint, tests, package build, and portfolio-notebook execution;
 - a retrospective validation with explicitly frozen heuristic settings;
 - an executed, reduced homology-aware MVP with versioned fold metrics and sampling audit.
+
+
+## Audit status
+
+The audit branch corrects the canonical BLOSUM62 descriptor and rejects composite mutation labels during ingestion. The committed model artifact was trained before the corrected descriptor and must not be presented as the final corrected model until features, training and benchmarks are regenerated. The retrospective Godoy report is retained for traceability, but BTL2 rows with unresolved residue joins are not valid validation evidence. AlphaFold pLDDT is treated as confidence rather than experimental mobility in inference.

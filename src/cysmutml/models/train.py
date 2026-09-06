@@ -42,9 +42,16 @@ def evaluate_models(
     target = "destabilization_ddg_kcal_mol"
     if group_column not in df.columns:
         raise ValueError(f"Grouping column {group_column!r} is missing from the feature table")
-    if df[group_column].isna().any():
-        raise ValueError(f"Grouping column {group_column!r} contains missing values")
-    groups = df[group_column].astype(str)
+    # FireProtDB contains records without a stable protein label. Preserve them
+    # instead of silently dropping data: use the strongest available identifier
+    # as the group key, with an explicit fallback for truly anonymous rows.
+    groups = df[group_column].astype("string")
+    fallback = pd.Series("unknown_protein", index=df.index, dtype="string")
+    for fallback_column in ("uniprot_id", "fireprotdb_sequence_id", "canonical_sequence"):
+        if fallback_column in df.columns:
+            candidate = df[fallback_column].astype("string").str.strip()
+            fallback = fallback.where(candidate.isna() | candidate.eq(""), candidate)
+    groups = groups.where(groups.notna() & groups.str.strip().ne(""), fallback).astype(str)
     n_groups = groups.nunique()
     n_splits = min(int(config["cv_folds"]), n_groups)
     if n_splits < 2:

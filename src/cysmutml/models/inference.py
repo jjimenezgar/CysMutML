@@ -31,7 +31,7 @@ def _secondary_structure_map(pdb_path: str | Path) -> dict[tuple[str, str], str]
         structure = parse_pdb(pdb_path)
         chain_ids = [chain.id for chain in next(structure.get_models())]
         output: dict[tuple[str, str], str] = {}
-        for residue, code in zip(trajectory.topology.residues, dssp):
+        for residue, code in zip(trajectory.topology.residues, dssp, strict=True):
             chain_index = residue.chain.index
             chain_id = chain_ids[chain_index] if chain_index < len(chain_ids) else str(chain_index)
             output[(chain_id, str(residue.resSeq))] = str(code)
@@ -299,6 +299,7 @@ def predict_cys_mutations(
     protected_residues: str | None = None,
     config_path: str | Path = "configs/default.yaml",
     monocysteine_design: bool = False,
+    structure_origin: str | None = None,
 ) -> tuple[pd.DataFrame, list[str]]:
     config = load_config(config_path)
     model_path = Path(model_path)
@@ -338,6 +339,13 @@ def predict_cys_mutations(
         out["local_flexibility_proxy"] = np.nan
         out["flexibility_value"] = np.nan
         out["flexibility_method"] = "UNAVAILABLE"
+
+    # AlphaFold stores pLDDT confidence in the PDB B-factor field. It is not an
+    # experimental mobility measurement, so never use it as a flexibility proxy.
+    if structure_origin == "alphafold":
+        out["local_flexibility_proxy"] = np.nan
+        out["flexibility_value"] = np.nan
+        out["flexibility_method"] = "PLDDT_CONFIDENCE_NOT_FLEXIBILITY"
     out = out.sort_values("predicted_destabilization_ddg", ascending=True).reset_index(drop=True)
     out.insert(0, "rank_ml", range(1, len(out) + 1))
     warnings = out_of_domain_warnings(

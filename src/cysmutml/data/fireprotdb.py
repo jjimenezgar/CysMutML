@@ -140,7 +140,7 @@ def normalize_fireprotdb_table(df: pd.DataFrame) -> tuple[pd.DataFrame, dict[str
     rejected = 0
     for source_row_index, row in df.iterrows():
         try:
-            mutation = parse_mutation(str(row[mutation_col]).split(",")[0])
+            mutation = parse_mutation(str(row[mutation_col]))
             ddg = pd.to_numeric(row[ddg_col], errors="raise")
         except Exception:
             rejected += 1
