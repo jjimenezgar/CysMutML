@@ -498,3 +498,20 @@ def test_mvp_subset_is_deterministic_and_keeps_clusters_complete():
         expected = set(table.loc[table["sequence_cluster"] == cluster, "protein_id"])
         observed = set(first.loc[first["sequence_cluster"] == cluster, "protein_id"])
         assert observed == expected
+
+
+def test_blosum62_canonical_reference_values():
+    assert physicochemical_features("A", "C")["blosum62"] == 0
+    assert physicochemical_features("A", "F")["blosum62"] == -2
+    assert physicochemical_features("K", "K")["blosum62"] == 5
+    assert physicochemical_features("W", "W")["blosum62"] == 11
+
+
+def test_fireprotdb_rejects_composite_mutations():
+    raw = pd.DataFrame(
+        {"protein": ["p1", "p2"], "mutation": ["A1C,G2D", "A1C"], "ddg": [1.0, 0.2]}
+    )
+    out, summary = normalize_fireprotdb_table(raw)
+    assert len(out) == 1
+    assert out.iloc[0]["mutation"] == "A1C"
+    assert summary["rejected_records"] == 1
