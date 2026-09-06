@@ -217,7 +217,8 @@ def render_protein_viewer(
         scrolling=False,
     )
     st.caption(
-        "Gold residues mark the selected top-ranked candidates; red sticks show their local environment."
+        "Gold residues mark the selected top-ranked candidates; "
+        "red sticks show their local environment."
     )
 
 
@@ -248,8 +249,8 @@ def render_overview() -> None:
     third.metric("X→Cys rows", "16,236")
     fourth.metric("Validation", "Protein-aware")
     st.markdown(
-        '<p class="section-note">The ML model and the structural ranking heuristic are deliberately separate. '
-        "Neither is a calibrated probability of experimental success.</p>",
+        '<p class="section-note">The ML model and the structural ranking heuristic are '
+        'deliberately separate. Neither is a calibrated probability of experimental success.</p>',
         unsafe_allow_html=True,
     )
 
@@ -325,14 +326,17 @@ def render_benchmark() -> None:
             }
         )
         st.dataframe(comparison, use_container_width=True, hide_index=True)
-        st.info("The homology-clustered split is intentionally stricter and exposes residual relatedness between proteins.")
+        st.info(
+            "The homology-clustered split is intentionally stricter and exposes "
+            "residual relatedness between proteins."
+        )
 
         st.markdown("#### What the validation splits mean")
         st.caption(
-            "**Protein grouped:** all mutations from one protein stay in the same fold, so the model "
-            "is tested on proteins it did not see during training. **Homology clustered:** proteins "
-            "with similar sequences are first grouped with MMseqs2 and the whole cluster stays in one "
-            "fold. This is a stricter test of performance on less-related protein families."
+            "**Protein grouped:** all mutations from one protein stay in the same fold, "
+            "so the model is tested on proteins it did not see during training. "
+            "**Homology clustered:** similar sequences are grouped with MMseqs2 and the "
+            "whole cluster stays in one fold. This is a stricter test of transfer."
         )
 
     st.markdown("#### How to read these metrics")
@@ -566,8 +570,9 @@ def render_methods() -> None:
         **Calculated from the target structure**
 
         Relative exposure, B-factor-derived flexibility, secondary structure from MDTraj/DSSP,
-        local exposed-lysine context and existing-cysteine context. Protected residues, when supplied,
-        are kept as an optional exclusion annotation and do not change the default MVP score.
+        local exposed-lysine context and existing-cysteine context. Protected residues, when
+        supplied, are kept as an optional exclusion annotation and do not change the default MVP
+        score.
 
         **Interpretation**
 
