@@ -244,9 +244,9 @@ def render_overview() -> None:
         "they can create competing thiol sites or unwanted disulfide interactions."
     )
     first, second, third, fourth = st.columns(4)
-    first.metric("Training rows", "352,005")
-    second.metric("Protein groups", "542")
-    third.metric("X→Cys rows", "16,236")
+    first.metric("Training rows", "351,487")
+    second.metric("Protein groups", "543")
+    third.metric("X→Cys rows", "16,208")
     fourth.metric("Validation", "Protein-aware")
     st.markdown(
         '<p class="section-note">The ML model and the structural ranking heuristic are '
@@ -289,7 +289,8 @@ def render_benchmark() -> None:
     homology_folds = ROOT / "results" / "homology_validation" / "split_comparison_fold_metrics.csv"
     if homology_folds.exists():
         st.divider()
-        st.subheader("Homology-aware MVP")
+        st.subheader("Homology-aware MVP — historical")
+        st.warning("Pre-audit results: these tables do not evaluate the corrected deployed model.")
         st.caption("150 proteins, 5,634 rows, MMseqs2 at 30% identity / 80% coverage, seed 42.")
         folds = pd.read_csv(homology_folds)
         comparison = (
@@ -589,7 +590,7 @@ def render_methods() -> None:
     )
     st.link_button(
         "Read the model card",
-        "https://github.com/jjimenezgar/CysMutML/blob/portfolio-v1.1/MODEL_CARD.md",
+        "https://github.com/jjimenezgar/CysMutML/blob/main/MODEL_CARD.md",
     )
 
 

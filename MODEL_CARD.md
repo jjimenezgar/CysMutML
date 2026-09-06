@@ -11,9 +11,9 @@ remain deliberately separate.
 |---|---|
 | Model | Ridge regression |
 | Training source | FireProtDB v2.0 API CSV export |
-| Training rows | 352,005 median-aggregated mutation records |
-| Protein groups | 542 |
-| X→Cys rows | 16,236 |
+| Training rows | 351,487 median-aggregated mutation records |
+| Evaluation groups | 543 |
+| X→Cys rows | 16,208 |
 | Target | `destabilization_ddg_kcal_mol` |
 | Sign convention | Larger positive values mean greater destabilization |
 | Validation | 3-fold GroupKFold by `protein_id` |
@@ -44,17 +44,17 @@ Mean metrics across protein-grouped folds:
 
 | Population | Model | MAE | RMSE | R² | Pearson | Spearman |
 |---|---|---:|---:|---:|---:|---:|
-| All mutations | Dummy mean | 0.800 | 1.049 | -0.002 | — | — |
-| All mutations | Ridge | 0.684 | 0.930 | 0.213 | 0.462 | 0.450 |
-| All mutations | HistGradientBoosting | 0.669 | 0.917 | 0.234 | 0.485 | 0.475 |
-| X→Cys | Dummy mean | 0.739 | 0.923 | -0.172 | — | — |
-| X→Cys | Ridge | 0.587 | 0.803 | 0.115 | 0.348 | 0.345 |
-| X→Cys | HistGradientBoosting | 0.579 | 0.795 | 0.131 | 0.364 | 0.362 |
+| All mutations | Dummy mean | 0.792 | 1.040 | -0.009 | — | — |
+| All mutations | Ridge | 0.667 | 0.912 | 0.223 | 0.481 | 0.467 |
+| All mutations | HistGradientBoosting | 0.662 | 0.908 | 0.231 | 0.489 | 0.479 |
+| X→Cys | Dummy mean | 0.731 | 0.913 | -0.189 | — | — |
+| X→Cys | Ridge | 0.576 | 0.790 | 0.112 | 0.344 | 0.313 |
+| X→Cys | HistGradientBoosting | 0.571 | 0.783 | 0.128 | 0.367 | 0.363 |
 
 HGB performs slightly better. Ridge remains deployed because the gain is small
 relative to the interpretability and operational simplicity of the linear model.
 
-### Homology-aware MVP
+### Homology-aware MVP (historical, pre-audit)
 
 A reduced, deterministic benchmark was executed on 150 proteins and 5,634 mutation
 rows after MMseqs2 clustering at 30% identity and 80% coverage. Mean MAE across three
@@ -97,7 +97,7 @@ presented as proof that a mutation will fail or succeed.
 
 The repository contains:
 
-- exact package dependencies and a command-line interface;
+- package dependency requirements (not a locked training environment) and a command-line interface;
 - grouped cross-validation results;
 - model metadata and a serialized artifact;
 - self-contained tests;
@@ -108,4 +108,4 @@ The repository contains:
 
 ## Audit status
 
-The audit branch corrects the canonical BLOSUM62 descriptor and rejects composite mutation labels during ingestion. The committed model artifact was trained before the corrected descriptor and must not be presented as the final corrected model until features, training and benchmarks are regenerated. The retrospective Godoy report is retained for traceability, but BTL2 rows with unresolved residue joins are not valid validation evidence. AlphaFold pLDDT is treated as confidence rather than experimental mobility in inference.
+The audit branch corrects the canonical BLOSUM62 descriptor and rejects composite mutation labels during ingestion. The committed Ridge artifact and full physicochemical benchmarks were regenerated in Actions run 34040897260 on 6 September 2026. Historical homology results were not regenerated and are not evidence for this corrected artifact. The retrospective Godoy report is retained for traceability, but BTL2 rows with unresolved residue joins are not valid validation evidence. AlphaFold pLDDT is treated as confidence rather than experimental mobility in inference.
