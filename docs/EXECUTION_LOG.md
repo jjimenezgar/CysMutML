@@ -314,3 +314,8 @@ ESM-2 8M CPU pilot (two threads): 96/228/809 residues took 0.022/0.039/0.178 sec
 ## ESM context comparison — 9 September 2026
 
 Completed [run 34328356730](https://github.com/jjimenezgar/CysMutML/actions/runs/34328356730): 5,506 verified mutations, 170 sequences, 142 groups and three matched homology-grouped folds. Compared mean baseline, physicochemical Ridge, ESM context-only Ridge and their combination. Combined MAE: 1.466 overall and 1.075 for enzyme X→Cys (46 rows, 11 groups); respective physicochemical MAE: 1.487 and 1.501. Global combined R²: −0.206. Results are exploratory and not directly comparable to the full production benchmark. No production model or Streamlit inference change. Methods, limitations and artifacts: [ESM context comparison](https://github.com/jjimenezgar/CysMutML/blob/experiment/enzyme-esm-feasibility/docs/ESM_CONTEXT_COMPARISON.md).
+
+
+## Sequence recovery audit — 9 September 2026
+
+Completed frozen-data audit: 345,638 rows lack sequence; only four have UniProt. Found 68 conflicting WT positions across 29 protein names. Original Tsuboyama Fig. 3 source labels match 297 names (271,718 rows; 12,344 X→Cys), but these are recovery candidates, not verified full constructs. No new training-ready sequences or model changes. Reconstruct source-level sequence/assay provenance and reconcile target values before retraining. See [sequence recovery audit](SEQUENCE_RECOVERY_AUDIT.md) and results/sequence_recovery_audit/.
