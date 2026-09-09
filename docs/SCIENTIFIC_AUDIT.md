@@ -232,3 +232,27 @@ representative IDs, and sequence provenance IDs are excluded from model features
 ## Benchmark synchronization — 6 September 2026
 
 The deployed Ridge model is unchanged. Full physicochemical metrics now match successful Actions run 34040897260 (training source commit 9b8613b868a333a5f6eda35b47575b19bec7c58b). Training: 351,487 aggregated rows; 543 evaluation groups; 16,208 X-to-Cys rows. Missing-name audit: 16 measurements formed 10 mutations across six UniProt identities; no cross-protein collision was found in those groups. A pre-aggregation identity guard now rejects conflicting identifiers and unresolved anonymous duplicates. No new training was required. Historical homology and invalid BTL2 results must not be interpreted as validation of the corrected model.
+
+
+## Enzyme ESM feasibility — 9 September 2026
+
+Successful run: https://github.com/jjimenezgar/CysMutML/actions/runs/34327672338
+
+Using the frozen audited dataset, the strict reviewed-UniProt plus EC filter and exact sequence/WT checks retained 2,043 mutations from 64 unique sequences, including 46 X-to-Cys mutations. This is annotation/mapping coverage, not proof that excluded records are non-enzymes. No model was trained or promoted.
+
+ESM-2 8M CPU pilot (two threads): 96/228/809 residues took 0.022/0.039/0.178 seconds for tokenization and inference after model load. Peak process RSS: 467.2 MiB; model load: 1.06 seconds in that runner. These timings exclude dependency installation and are not Streamlit latency guarantees. Full details and UniProt annotation snapshot are retained in the workflow artifact. The small Cys subset limits robust downstream validation; enzyme-only specialization remains experimental.
+
+
+## ESM context comparison — 9 September 2026
+
+Completed [run 34328356730](https://github.com/jjimenezgar/CysMutML/actions/runs/34328356730): 5,506 verified mutations, 170 sequences, 142 groups and three matched homology-grouped folds. Compared mean baseline, physicochemical Ridge, ESM context-only Ridge and their combination. Combined MAE: 1.466 overall and 1.075 for enzyme X→Cys (46 rows, 11 groups); respective physicochemical MAE: 1.487 and 1.501. Global combined R²: −0.206. Results are exploratory and not directly comparable to the full production benchmark. No production model or Streamlit inference change. Methods, limitations and artifacts: [ESM context comparison](https://github.com/jjimenezgar/CysMutML/blob/experiment/enzyme-esm-feasibility/docs/ESM_CONTEXT_COMPARISON.md).
+
+
+## Sequence recovery audit — 9 September 2026
+
+Completed frozen-data audit: 345,638 rows lack sequence; only four have UniProt. Found 68 conflicting WT positions across 29 protein names. Original Tsuboyama Fig. 3 source labels match 297 names (271,718 rows; 12,344 X→Cys), but these are recovery candidates, not verified full constructs. No new training-ready sequences or model changes. Reconstruct source-level sequence/assay provenance and reconcile target values before retraining. See [sequence recovery audit](SEQUENCE_RECOVERY_AUDIT.md) and results/sequence_recovery_audit/.
+
+## Portfolio MVP closure — 9 September 2026
+
+Ridge remains the demonstration model; ESM is an executed offline ablation. README, model card and Streamlit explicitly describe exploratory predictions and unresolved dataset identities. Source reconstruction and further retraining are deferred. This closes the portfolio implementation scope, not scientific validation of enzyme mutation outcomes.
+

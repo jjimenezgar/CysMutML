@@ -18,11 +18,14 @@ CysMutML does not model the immobilization chemistry itself; it prioritizes muta
 [![Tests](https://img.shields.io/badge/tests-run%20in%20CI-2ea44f?style=for-the-badge&logo=pytest&logoColor=white)](https://github.com/jjimenezgar/CysMutML/actions/workflows/ci.yml)
 [![Launch Streamlit](https://img.shields.io/badge/Launch%20Streamlit-2ea44f?style=for-the-badge&logo=streamlit&logoColor=white)](https://cysmutml.streamlit.app)
 
+**Portfolio MVP.** This project demonstrates an end-to-end ML workflow and an evaluated protein language model experiment. Predictions are exploratory; reliable transfer to new enzymes has not been established.
+
 ## What the project demonstrates
 
 - Data cleaning and aggregation for a heterogeneous protein dataset.
 - Protein-aware and homology-aware cross-validation.
 - Interpretable regression with a reproducible benchmark.
+- Frozen ESM residue embeddings and a matched-fold ablation.
 - Leakage checks and explicit feature contracts.
 - End-to-end inference on a PDB structure.
 - A lightweight Streamlit interface and downloadable analysis files.
@@ -57,6 +60,12 @@ Mean MAE, lower is better. On the X→Cys subset, Ridge scored 1.535 with protei
 This is a small portfolio benchmark, not a state-of-the-art claim. The full fold metrics, timing measurements, sampling audit and permutation importance are in [docs/HOMOLOGY_VALIDATION.md](docs/HOMOLOGY_VALIDATION.md). The X→Cys subset is reported separately because it is the downstream use case.
 
 **What the results say.** On the full physicochemical benchmark, Ridge and gradient boosting improve on the mean baseline. On the reduced homology-aware MVP, the mean baseline is slightly better than every learned model, especially for X→Cys. This is an explicit negative result: the current descriptors do not generalise reliably to unseen proteins in that subset. Ridge remains deployed for its simplicity and interpretability, not because it wins every split.
+
+## Protein language model experiment
+
+A frozen ESM-2 8M model was evaluated alongside physicochemical Ridge on 5,506 sequence-verified mutations using identical homology-grouped folds. Adding residue embeddings reduced MAE from 1.487 to 1.466 kcal/mol overall, but R² remained negative. The enzyme X→Cys subset improved from 1.501 to 1.075, with only 46 observations in 11 groups. These results do not yet justify deployment.
+
+[Methods, ablation results and limitations](docs/ESM_CONTEXT_COMPARISON.md). ESM supplies sequence context, not an explicit 3D interaction model. The deployed model remains physicochemical Ridge; training runs outside Streamlit.
 
 ## Streamlit app
 
@@ -158,3 +167,5 @@ The repository also contains an exploratory structure-trained ablation under `re
 The deployed model was retrained on 6 September 2026 (Actions run 34040897260). Versioned full-dataset metrics match that run. The historical homology benchmark has not been regenerated and does not evaluate the corrected model.
 
 The audit corrects the canonical BLOSUM62 descriptor, rejects composite mutation labels during ingestion, and distinguishes AlphaFold pLDDT from experimental B-factors. Results that depend on the previous descriptor table or the pre-audit Godoy residue joins must be regenerated before being used as validation evidence.
+
+The [sequence recovery audit](docs/SEQUENCE_RECOVERY_AUDIT.md) found unresolved construct/position identities and source-value reconciliation needs in the broader training data. Existing metrics describe the processed dataset, not independently validated enzyme prediction. Source-level reconstruction and larger retraining are deferred beyond this MVP.

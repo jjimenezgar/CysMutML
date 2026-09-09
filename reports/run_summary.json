@@ -360,5 +360,84 @@
       "cross_protein_collisions_found": 0
     },
     "historical_homology_not_regenerated": true
+  },
+  "enzyme_esm_feasibility": {
+    "run_id": 34327672338,
+    "rows": 2043,
+    "sequences": 64,
+    "cys_rows": 46,
+    "peak_rss_mib": 467.2,
+    "model_changed": false,
+    "status": "pilot_completed_no_training"
+  },
+  "esm_context_comparison": {
+    "run_id": 34328356730,
+    "artifact_id": 10094749100,
+    "rows": 5506,
+    "sequences": 170,
+    "groups": 142,
+    "folds": 3,
+    "enzyme_cys_rows": 46,
+    "enzyme_cys_groups": 11,
+    "combined_mae": 1.465994,
+    "combined_r2": -0.206165,
+    "combined_enzyme_cys_mae": 1.075263,
+    "production_model_changed": false,
+    "status": "completed_experimental_not_promoted",
+    "metrics": "results/esm_context_comparison/metrics_rounded.csv"
+  },
+  "sequence_recovery_audit": {
+    "rows": 351487,
+    "missing_sequence_rows": 345638,
+    "missing_sequence_cys_rows": 16067,
+    "missing_sequence_protein_names": 371,
+    "missing_sequence_without_uniprot": 345634,
+    "categories": [
+      {
+        "category": "construct_or_design_name",
+        "rows": 129195,
+        "proteins": 156,
+        "cys": 5452
+      },
+      {
+        "category": "pdb_like_name",
+        "rows": 216439,
+        "proteins": 214,
+        "cys": 10615
+      },
+      {
+        "category": "uniprot_present",
+        "rows": 4,
+        "proteins": 1,
+        "cys": 0
+      }
+    ],
+    "conflicting_sites": 68,
+    "conflicting_protein_names": 29,
+    "conflicting_site_rows": 2344,
+    "conflicting_site_cys_rows": 120,
+    "source_name_matches": 297,
+    "source_name_matched_rows": 271718,
+    "source_name_matched_cys_rows": 12344,
+    "exact_source_key_rows": 233649,
+    "exact_source_key_cys_rows": 12040,
+    "same_value_rows": 101248,
+    "opposite_value_rows": 0,
+    "new_training_ready_sequences": 0,
+    "model_changed": false,
+    "source": "https://zenodo.org/records/7992926",
+    "source_member": "Data_tables_for_figs/dG_site_feature_Fig3.csv",
+    "caveat": "Name/site matches are candidates, not verified full construct sequences. Source keys use supplied positions without offsets. Reconcile construct identity, aggregation, assay quality and sign before training.",
+    "input_sha256": {
+      "cys-audit.zip": "ee3ec643a7d4b9578b6bda7f78c009f31a1ba384685870768509a8bbf19e9aa6",
+      "cys-source-tables.zip": "69f6d5a68ba961759879ab60b3f168b8fad1bce0b0b810ac490fe85001515890"
+    }
+  },
+  "mvp_closure": {
+    "status": "portfolio_scope_closed",
+    "production_model": "Ridge",
+    "esm": "experimental_not_deployed",
+    "source_reconstruction": "deferred",
+    "predictive_validation": "not_established_for_new_enzymes"
   }
 }
