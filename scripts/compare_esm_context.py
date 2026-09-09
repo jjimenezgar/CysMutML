@@ -203,8 +203,8 @@ def main():
         git_commit=subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip(),
         production_model_changed=False,
         caveats=["Exploratory comparison; not an independent model-selection test.",
-                 "Homology groups are operational MMseqs clusters, not proof of no remote homology.",
-                 "Sequence identity and WT checks cannot resolve all construct-numbering ambiguity.",
+                 "MMseqs clusters do not rule out all remote homology.",
+                 "Sequence and WT checks cannot resolve all construct-numbering ambiguity.",
                  "Missing enzyme annotation does not imply non-enzyme.",
                  "ESM pretraining overlap is not ruled out."],
     )
