@@ -19,6 +19,10 @@ remain deliberately separate.
 | Validation | 3-fold GroupKFold by `protein_id` |
 | Artifact | `models/cysmutml_model.joblib` |
 
+## MVP status
+
+Portfolio MVP: a reproducible ML workflow for cysteine-site prioritization. Predictions are exploratory; reliable transfer to new enzymes has not been established.
+
 ## Intended use
 
 The model provides a lightweight, reproducible mutation-tolerance signal for
@@ -72,10 +76,11 @@ Primary evaluation groups rows by protein, so mutations from the same protein do
 not appear in both train and test folds. Random mutation-level splitting is not
 used as the headline result.
 
-This design does not guarantee separation of homologous proteins. CysMutML v1.2
-adds an MMseqs2-based sequence-cluster split to estimate performance on less-related
-protein families. The infrastructure is CI-tested; numerical results are not claimed
-until the FireProtDB tables are regenerated and the experiment is executed.
+This design does not guarantee separation of homologous proteins. The separate
+[ESM experiment](docs/ESM_CONTEXT_COMPARISON.md) evaluates corrected descriptors and
+frozen embeddings on identical homology-grouped folds for 5,506 verified rows.
+Its results did not justify promoting ESM. They are not directly comparable to the
+full-data metrics above.
 
 ## Known limitations
 
@@ -109,3 +114,7 @@ The repository contains:
 ## Audit status
 
 The audit branch corrects the canonical BLOSUM62 descriptor and rejects composite mutation labels during ingestion. The committed Ridge artifact and full physicochemical benchmarks were regenerated in Actions run 34040897260 on 6 September 2026. Historical homology results were not regenerated and are not evidence for this corrected artifact. The retrospective Godoy report is retained for traceability, but BTL2 rows with unresolved residue joins are not valid validation evidence. AlphaFold pLDDT is treated as confidence rather than experimental mobility in inference.
+
+## Data audit and scope
+
+The [sequence recovery audit](docs/SEQUENCE_RECOVERY_AUDIT.md) found 68 conflicting WT positions across 29 protein names in records lacking sequence. Construct identity, numbering, source-value aggregation and sign provenance need reconciliation before stronger predictive claims. This does not invalidate every row, but limits interpretation of the broader benchmark. The MVP retains Ridge as a demonstration baseline; source reconstruction and further retraining are deferred. ESM remains an offline experiment, not part of app inference.
