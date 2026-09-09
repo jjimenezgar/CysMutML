@@ -243,6 +243,10 @@ def render_overview() -> None:
         "for possible multipoint attachment, while nearby native cysteines are penalized because "
         "they can create competing thiol sites or unwanted disulfide interactions."
     )
+    st.info(
+        "Portfolio MVP: predictions are exploratory. Reliable transfer to new enzymes "
+        "has not been established."
+    )
     first, second, third, fourth = st.columns(4)
     first.metric("Training rows", "351,487")
     second.metric("Protein groups", "543")
@@ -270,8 +274,8 @@ def render_benchmark() -> None:
     st.info(
         "The models beat the mean baseline, but the explained variance is modest. "
         "Gradient boosting is slightly better than Ridge in this benchmark; Ridge remains "
-        "deployed because it is simpler and easier to interpret. The stricter homology-clustered "
-        "split increases the error, which is an important generalisation caveat."
+        "deployed as a simple demonstration baseline. Historical homology results use a "
+        "different cohort and do not directly evaluate this deployed artifact."
     )
 
     st.markdown("**Mean absolute error**")
@@ -338,6 +342,27 @@ def render_benchmark() -> None:
             "so the model is tested on proteins it did not see during training. "
             "**Homology clustered:** similar sequences are grouped with MMseqs2 and the "
             "whole cluster stays in one fold. This is a stricter test of transfer."
+        )
+
+    with st.expander("ESM experiment and data audit"):
+        st.write(
+            "Frozen ESM-2 embeddings were compared on 5,506 sequence-verified mutations "
+            "using identical homology-grouped folds. Combined Ridge MAE was 1.466 versus "
+            "1.487 for physicochemical Ridge; global R² remained negative. Only 46 enzyme "
+            "X→Cys examples were available. ESM was not promoted to app inference."
+        )
+        st.write(
+            "The broader dataset has unresolved construct and residue identities. "
+            "Its source values need reconciliation before stronger predictive claims. "
+            "These benchmarks demonstrate the workflow, not validated enzyme engineering."
+        )
+        st.link_button(
+            "Read the ESM comparison",
+            "https://github.com/jjimenezgar/CysMutML/blob/main/docs/ESM_CONTEXT_COMPARISON.md",
+        )
+        st.link_button(
+            "Read the data audit",
+            "https://github.com/jjimenezgar/CysMutML/blob/main/docs/SEQUENCE_RECOVERY_AUDIT.md",
         )
 
     st.markdown("#### How to read these metrics")
