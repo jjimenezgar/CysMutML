@@ -300,3 +300,12 @@ Status: EXECUTED AND VERIFIED
 ## Benchmark synchronization — 6 September 2026
 
 The deployed Ridge model is unchanged. Full physicochemical metrics now match successful Actions run 34040897260 (training source commit 9b8613b868a333a5f6eda35b47575b19bec7c58b). Training: 351,487 aggregated rows; 543 evaluation groups; 16,208 X-to-Cys rows. Missing-name audit: 16 measurements formed 10 mutations across six UniProt identities; no cross-protein collision was found in those groups. A pre-aggregation identity guard now rejects conflicting identifiers and unresolved anonymous duplicates. No new training was required. Historical homology and invalid BTL2 results must not be interpreted as validation of the corrected model.
+
+
+## Enzyme ESM feasibility — 9 September 2026
+
+Successful run: https://github.com/jjimenezgar/CysMutML/actions/runs/34327672338
+
+Using the frozen audited dataset, the strict reviewed-UniProt plus EC filter and exact sequence/WT checks retained 2,043 mutations from 64 unique sequences, including 46 X-to-Cys mutations. This is annotation/mapping coverage, not proof that excluded records are non-enzymes. No model was trained or promoted.
+
+ESM-2 8M CPU pilot (two threads): 96/228/809 residues took 0.022/0.039/0.178 seconds for tokenization and inference after model load. Peak process RSS: 467.2 MiB; model load: 1.06 seconds in that runner. These timings exclude dependency installation and are not Streamlit latency guarantees. Full details and UniProt annotation snapshot are retained in the workflow artifact. The small Cys subset limits robust downstream validation; enzyme-only specialization remains experimental.
