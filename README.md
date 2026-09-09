@@ -18,11 +18,14 @@ CysMutML does not model the immobilization chemistry itself; it prioritizes muta
 [![Tests](https://img.shields.io/badge/tests-run%20in%20CI-2ea44f?style=for-the-badge&logo=pytest&logoColor=white)](https://github.com/jjimenezgar/CysMutML/actions/workflows/ci.yml)
 [![Launch Streamlit](https://img.shields.io/badge/Launch%20Streamlit-2ea44f?style=for-the-badge&logo=streamlit&logoColor=white)](https://cysmutml.streamlit.app)
 
+**Portfolio MVP.** This project demonstrates an end-to-end ML workflow and an evaluated protein language model experiment. Predictions are exploratory; reliable transfer to new enzymes has not been established.
+
 ## What the project demonstrates
 
 - Data cleaning and aggregation for a heterogeneous protein dataset.
 - Protein-aware and homology-aware cross-validation.
 - Interpretable regression with a reproducible benchmark.
+- Frozen ESM residue embeddings and a matched-fold ablation.
 - Leakage checks and explicit feature contracts.
 - End-to-end inference on a PDB structure.
 - A lightweight Streamlit interface and downloadable analysis files.
@@ -164,3 +167,5 @@ The repository also contains an exploratory structure-trained ablation under `re
 The deployed model was retrained on 6 September 2026 (Actions run 34040897260). Versioned full-dataset metrics match that run. The historical homology benchmark has not been regenerated and does not evaluate the corrected model.
 
 The audit corrects the canonical BLOSUM62 descriptor, rejects composite mutation labels during ingestion, and distinguishes AlphaFold pLDDT from experimental B-factors. Results that depend on the previous descriptor table or the pre-audit Godoy residue joins must be regenerated before being used as validation evidence.
+
+The [sequence recovery audit](docs/SEQUENCE_RECOVERY_AUDIT.md) found unresolved construct/position identities and source-value reconciliation needs in the broader training data. Existing metrics describe the processed dataset, not independently validated enzyme prediction. Source-level reconstruction and larger retraining are deferred beyond this MVP.
