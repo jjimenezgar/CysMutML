@@ -1,5 +1,11 @@
 # CysMutML Project Status
 
+## Portfolio MVP closure — 9 September 2026
+
+Ridge remains the demonstration model; ESM is an executed offline ablation. README, model card and Streamlit explicitly describe exploratory predictions and unresolved dataset identities. Source reconstruction and further retraining are deferred. This closes the portfolio implementation scope, not scientific validation of enzyme mutation outcomes.
+
+
+
 Release baseline date: 2026-08-25
 
 Portfolio hardening update: 2026-09-02
