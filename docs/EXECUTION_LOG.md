@@ -319,3 +319,8 @@ Completed [run 34328356730](https://github.com/jjimenezgar/CysMutML/actions/runs
 ## Sequence recovery audit — 9 September 2026
 
 Completed frozen-data audit: 345,638 rows lack sequence; only four have UniProt. Found 68 conflicting WT positions across 29 protein names. Original Tsuboyama Fig. 3 source labels match 297 names (271,718 rows; 12,344 X→Cys), but these are recovery candidates, not verified full constructs. No new training-ready sequences or model changes. Reconstruct source-level sequence/assay provenance and reconcile target values before retraining. See [sequence recovery audit](SEQUENCE_RECOVERY_AUDIT.md) and results/sequence_recovery_audit/.
+
+## Portfolio MVP closure — 9 September 2026
+
+Ridge remains the demonstration model; ESM is an executed offline ablation. README, model card and Streamlit explicitly describe exploratory predictions and unresolved dataset identities. Source reconstruction and further retraining are deferred. This closes the portfolio implementation scope, not scientific validation of enzyme mutation outcomes.
+
