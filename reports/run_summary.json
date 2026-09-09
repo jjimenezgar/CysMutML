@@ -432,5 +432,12 @@
       "cys-audit.zip": "ee3ec643a7d4b9578b6bda7f78c009f31a1ba384685870768509a8bbf19e9aa6",
       "cys-source-tables.zip": "69f6d5a68ba961759879ab60b3f168b8fad1bce0b0b810ac490fe85001515890"
     }
+  },
+  "mvp_closure": {
+    "status": "portfolio_scope_closed",
+    "production_model": "Ridge",
+    "esm": "experimental_not_deployed",
+    "source_reconstruction": "deferred",
+    "predictive_validation": "not_established_for_new_enzymes"
   }
 }
