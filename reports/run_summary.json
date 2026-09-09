@@ -360,5 +360,14 @@
       "cross_protein_collisions_found": 0
     },
     "historical_homology_not_regenerated": true
+  },
+  "enzyme_esm_feasibility": {
+    "run_id": 34327672338,
+    "rows": 2043,
+    "sequences": 64,
+    "cys_rows": 46,
+    "peak_rss_mib": 467.2,
+    "model_changed": false,
+    "status": "pilot_completed_no_training"
   }
 }
