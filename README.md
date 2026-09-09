@@ -58,6 +58,12 @@ This is a small portfolio benchmark, not a state-of-the-art claim. The full fold
 
 **What the results say.** On the full physicochemical benchmark, Ridge and gradient boosting improve on the mean baseline. On the reduced homology-aware MVP, the mean baseline is slightly better than every learned model, especially for X→Cys. This is an explicit negative result: the current descriptors do not generalise reliably to unseen proteins in that subset. Ridge remains deployed for its simplicity and interpretability, not because it wins every split.
 
+## Protein language model experiment
+
+A frozen ESM-2 8M model was evaluated alongside physicochemical Ridge on 5,506 sequence-verified mutations using identical homology-grouped folds. Adding residue embeddings reduced MAE from 1.487 to 1.466 kcal/mol overall, but R² remained negative. The enzyme X→Cys subset improved from 1.501 to 1.075, with only 46 observations in 11 groups. These results do not yet justify deployment.
+
+[Methods, ablation results and limitations](docs/ESM_CONTEXT_COMPARISON.md). ESM supplies sequence context, not an explicit 3D interaction model. The deployed model remains physicochemical Ridge; training runs outside Streamlit.
+
 ## Streamlit app
 
 Run the app locally:
