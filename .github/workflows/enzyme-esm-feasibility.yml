@@ -1,0 +1,76 @@
+name: Enzyme ESM feasibility
+on:
+  push:
+    branches: [experiment/enzyme-esm-feasibility]
+    paths: [.github/workflows/enzyme-esm-feasibility.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  pilot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/download-artifact@v4
+        with:
+          name: cysmutml-audited-retraining
+          run-id: 34040897260
+          github-token: ${{ github.token }}
+          path: frozen
+      - name: Install CPU dependencies
+        run: |
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+          pip install pandas transformers
+      - name: Audit enzyme coverage
+        run: |
+          cd frozen
+          zip -q ../frozen.zip data/processed/fireprotdb_mutations_aggregated.csv
+          cd ..
+          python scripts/audit_enzyme_coverage.py --artifact frozen.zip --output pilot
+      - name: Measure ESM on three eligible sequences
+        run: |
+          python - <<'PY'
+          import json, time, resource, hashlib
+          from pathlib import Path
+          import pandas as pd
+          import torch
+          import transformers
+          from transformers import AutoModel, AutoTokenizer
+          torch.set_num_threads(2)
+          path = Path("pilot/feasibility.json")
+          report = json.loads(path.read_text())
+          df = pd.read_csv("pilot/eligible_enzyme_mutations.csv", low_memory=False)
+          seqs = sorted(set(df.canonical_sequence.dropna()), key=lambda s: (len(s), s))
+          seqs = [s for s in seqs if 50 <= len(s) <= 1000 and set(s) <= set("ACDEFGHIKLMNPQRSTVWY")]
+          if not seqs:
+              raise ValueError("No eligible sequences for ESM pilot")
+          name = "facebook/esm2_t6_8M_UR50D"
+          start = time.perf_counter()
+          tok = AutoTokenizer.from_pretrained(name)
+          model = AutoModel.from_pretrained(name).eval()
+          report.update(model=name, revision=model.config._commit_hash,
+                        load_seconds=time.perf_counter()-start,
+                        torch_version=torch.__version__,
+                        transformers_version=transformers.__version__, pilot=[])
+          for i in sorted(set([0, len(seqs)//2, len(seqs)-1])):
+              seq = seqs[i]
+              start = time.perf_counter()
+              with torch.inference_mode():
+                  emb = model(**tok(seq, return_tensors="pt")).last_hidden_state[0, 1:len(seq)+1]
+              assert tuple(emb.shape) == (len(seq), 320)
+              report["pilot"].append(dict(length=len(seq), seconds=time.perf_counter()-start,
+                                         sequence_sha256=hashlib.sha256(seq.encode()).hexdigest()))
+          report.update(esm_measured=True, process_peak_rss_mib=resource.getrusage(resource.RUSAGE_SELF).ru_maxrss/1024)
+          path.write_text(json.dumps(report, indent=2))
+          print(path.read_text())
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: enzyme-esm-feasibility
+          path: pilot/
